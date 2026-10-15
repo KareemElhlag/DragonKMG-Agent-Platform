@@ -28,6 +28,20 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
         return result;
     }
 
+    public async Task<CouncilRun> RunDefaultCouncilAsync(string input, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(input)) throw new ArgumentException("Input is required.", nameof(input));
+        var agents = await store.ListAgentsAsync(cancellationToken);
+        var execution = FindCouncilAgent(agents, "Execution Agent");
+        var quality = FindCouncilAgent(agents, "Quality Review Agent");
+        var security = FindCouncilAgent(agents, "Security Test Agent");
+
+        var executionRun = await RunAgentAsync(execution.Id, input, cancellationToken);
+        var qualityRun = await RunAgentAsync(quality.Id, BuildReviewInput("Quality review", input, executionRun.Output), cancellationToken);
+        var securityRun = await RunAgentAsync(security.Id, BuildReviewInput("Security and test review", input, executionRun.Output, qualityRun.Output), cancellationToken);
+        return new CouncilRun(executionRun.Id, qualityRun.Id, securityRun.Id);
+    }
+
     public async Task<EffectiveAgentConfiguration> GetEffectiveConfigurationAsync(Guid agentId, CancellationToken cancellationToken)
     {
         var agent = await store.FindAgentAsync(agentId, cancellationToken) ?? throw new KeyNotFoundException("Agent was not found.");
@@ -71,5 +85,14 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
             await store.SaveRunAsync(failed, cancellationToken);
             throw;
         }
+    }
+
+    private static AgentDefinition FindCouncilAgent(IReadOnlyList<AgentDefinition> agents, string name) => agents.FirstOrDefault(agent => agent.Name == name && agent.Enabled) ?? throw new InvalidOperationException($"Default council agent '{name}' is missing or disabled. Provision the council before running it.");
+
+    private static string BuildReviewInput(string stage, string request, params string?[] evidence)
+    {
+        const int maximumEvidenceCharacters = 12000;
+        var material = string.Join("\n\n---\n\n", evidence.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value!.Length <= maximumEvidenceCharacters ? value : value[..maximumEvidenceCharacters]));
+        return $"{stage}\n\nOriginal request:\n{request}\n\nEvidence from prior stage(s):\n{material}";
     }
 }

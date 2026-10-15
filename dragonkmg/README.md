@@ -34,6 +34,8 @@ After creating a model connection, select it and a model ID in **Default multi-a
 
 Each new council member receives the four local default skills. The operation is idempotent: it creates missing council members but does not overwrite existing agents or their skill choices. Assignments can be removed individually in **Agent skill assignments**, and custom skills can be created in **Skills library** then assigned to any agent.
 
+Use **Run council workflow** to execute the stages in this order: Execution → Quality Review → Security Test Review. Each stage receives the original request plus bounded evidence from the stages before it. If a stage fails, later stages are not started.
+
 ## Configuration boundaries
 
 - `DRAGONKMG_DB_PATH` optionally chooses the SQLite file location.

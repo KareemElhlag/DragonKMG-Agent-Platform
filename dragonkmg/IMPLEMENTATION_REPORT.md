@@ -13,6 +13,7 @@
 - Protected the management API with a required local shared token. The dashboard sends it only from browser session storage, never from source code or build-time configuration.
 - Added startup recovery for interrupted agent runs and durable run-history rendering in the dashboard. Assignment replacement now uses a single SQLite transaction, preventing partially applied skill lists.
 - Added an idempotent default three-agent council: Execution, Quality Review, and Security Test. Provisioning applies the four local default skills only to newly created council members, preserving later removals and custom assignments.
+- Added the sequential council workflow: execution evidence is passed to quality review, then both are passed to the security/test review. Evidence relay is bounded and a failure stops later stages.
 - Verified dashboard build, .NET build, unit tests, API health, and dashboard-to-API role/skill assignment persistence. The smoke connection had cloud egress disabled and no provider request was made.
 
 ## Known limits

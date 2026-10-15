@@ -21,3 +21,4 @@ public static class DefaultCouncil
 
 public sealed record CouncilAgentTemplate(string Name, string Description, Guid RoleId, string Instructions);
 public sealed record DefaultCouncilProvisionRequest(Guid ConnectionId, string ModelId);
+public sealed record CouncilRun(Guid ExecutionRunId, Guid QualityReviewRunId, Guid SecurityReviewRunId);

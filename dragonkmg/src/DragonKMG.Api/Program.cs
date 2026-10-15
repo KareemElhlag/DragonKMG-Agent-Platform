@@ -42,6 +42,7 @@ app.MapPost("/api/skills", async (SkillDefinition value, IPlatformStore store, C
 app.MapGet("/api/agents", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListAgentsAsync(ct)));
 app.MapPost("/api/agents", async (AgentDefinition value, IPlatformStore store, CancellationToken ct) => { await store.SaveAgentAsync(value, ct); return Results.Created($"/api/agents/{value.Id}", value); });
 app.MapPost("/api/council/default", async (DefaultCouncilProvisionRequest value, PlatformService service, CancellationToken ct) => Results.Ok(await service.ProvisionDefaultCouncilAsync(value, ct)));
+app.MapPost("/api/council/default/run", async (RunRequest value, PlatformService service, CancellationToken ct) => Results.Ok(await service.RunDefaultCouncilAsync(value.Input, ct)));
 app.MapGet("/api/agents/{id:guid}/effective-configuration", async (Guid id, PlatformService service, CancellationToken ct) => Results.Ok(await service.GetEffectiveConfigurationAsync(id, ct)));
 app.MapGet("/api/agents/{id:guid}/skills", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListAssignmentsAsync(id, ct)));
 app.MapPut("/api/agents/{id:guid}/skills", async (Guid id, AgentSkillAssignment[] values, IPlatformStore store, CancellationToken ct) => { if (values.Any(x => x.AgentId != id)) return Results.BadRequest("Every assignment must belong to the route agent."); await store.ReplaceAssignmentsAsync(id, values, ct); return Results.NoContent(); });

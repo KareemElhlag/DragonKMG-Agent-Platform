@@ -18,7 +18,8 @@ public sealed class DefaultCouncilTests
         {
             await store.InitializeAsync(CancellationToken.None);
             await store.SaveConnectionAsync(new ProviderConnection(connectionId, "council-connection", ConnectionKind.OpenAiCompatible, new Uri("https://provider.example/"), "env:TEST_SECRET", true, TrustZone.Local, false, now), CancellationToken.None);
-            var service = new PlatformService(store, new UnusedGateway(), new UnusedSecretResolver());
+            var gateway = new CapturingGateway();
+            var service = new PlatformService(store, gateway, new TestSecretResolver());
 
             var provisioned = await service.ProvisionDefaultCouncilAsync(new DefaultCouncilProvisionRequest(connectionId, "test-model"), CancellationToken.None);
 
@@ -27,6 +28,13 @@ public sealed class DefaultCouncilTests
             Assert.Contains(provisioned, agent => agent.Name == "Quality Review Agent");
             Assert.Contains(provisioned, agent => agent.Name == "Security Test Agent");
             foreach (var agent in provisioned) Assert.Equal(4, (await store.ListAssignmentsAsync(agent.Id, CancellationToken.None)).Count);
+
+            var councilRun = await service.RunDefaultCouncilAsync("Implement inventory validation", CancellationToken.None);
+
+            Assert.NotEqual(Guid.Empty, councilRun.SecurityReviewRunId);
+            Assert.Equal(3, gateway.Requests.Count);
+            Assert.Contains("test-model result", gateway.Requests[1].Input);
+            Assert.Equal(2, gateway.Requests[2].Input.Split("test-model result", StringSplitOptions.None).Length - 1);
         }
         finally
         {
@@ -35,13 +43,18 @@ public sealed class DefaultCouncilTests
         }
     }
 
-    private sealed class UnusedGateway : IModelGateway
+    private sealed class CapturingGateway : IModelGateway
     {
-        public Task<ModelResponse> CompleteAsync(ModelRequest request) => throw new NotSupportedException();
+        public List<ModelRequest> Requests { get; } = [];
+        public Task<ModelResponse> CompleteAsync(ModelRequest request)
+        {
+            Requests.Add(request);
+            return Task.FromResult(new ModelResponse($"{request.ModelId} result", null, null));
+        }
     }
 
-    private sealed class UnusedSecretResolver : ISecretResolver
+    private sealed class TestSecretResolver : ISecretResolver
     {
-        public string? Resolve(string secretReference) => null;
+        public string? Resolve(string secretReference) => "test-secret";
     }
 }
