@@ -4,6 +4,8 @@ DragonKMG is a .NET 9, local-first control plane for governed agent configuratio
 
 For paid-edition compatibility, upgrade invariants and the remaining commercial delivery checklist are maintained in [Commercial edition roadmap](docs/COMMERCIAL_EDITION_ROADMAP.md).
 
+Cross-platform manual release usage, mobile-terminal limits, and the signed-installer acceptance gates are documented in [Cross-platform runbook](docs/CROSS_PLATFORM_RUNBOOK.md).
+
 ## Windows vault
 
 On Windows, store a provider secret with `dragonkmg vault set provider_token`; the CLI requests the value without echoing it. Use `vault:provider_token` as the connection secret reference. The value is encrypted with Windows DPAPI for the current Windows user and is not placed in SQLite. `env:NAME` remains the portable fallback. macOS Keychain and Linux Secret Service adapters are planned and are not implemented yet.

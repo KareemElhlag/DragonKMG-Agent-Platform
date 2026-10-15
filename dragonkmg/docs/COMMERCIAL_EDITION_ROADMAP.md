@@ -51,6 +51,7 @@ This document is the compatibility contract between the current local-first foun
 - [ ] PostgreSQL adapter and migration/restore verification.
 - [ ] Encrypted backup/restore, installer, upgrade/rollback, and named Windows/macOS/Linux smoke matrix.
 - [ ] Licensing module isolated from runtime and offline-grace behavior with no customer-data loss.
+- [ ] GitHub Release pipeline: self-contained archives per supported runtime identifier, checksums, signatures, provenance, and manual-download verification guidance.
 
 ## Release gates
 
