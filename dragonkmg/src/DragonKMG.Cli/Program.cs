@@ -14,10 +14,12 @@ using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(90) };
 var vault = new WindowsDpapiSecretVault(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DragonKMG", "vault"));
 var service = new PlatformService(store, new OpenAiCompatibleGateway(httpClient), new CompositeSecretResolver(vault));
 var arguments = args.ToList();
-if (arguments.Count == 0) { Help(); return; }
+if (arguments.Count == 0) { await TerminalControlPlane.OpenSessionAsync(store, service, "default", default); return; }
 switch (arguments[0].ToLowerInvariant())
 {
-    case "tui": await TerminalControlPlane.RunAsync(store, service, default); break;
+    case "tui": await TerminalControlPlane.OpenSessionAsync(store, service, arguments.ElementAtOrDefault(1) ?? "default", default); break;
+    case "session" when arguments is [_, "list"]: Write(await store.ListTerminalSessionsAsync(default)); break;
+    case "session" when arguments is [_, "open", var sessionName, ..]: await TerminalControlPlane.OpenSessionAsync(store, service, sessionName, default); break;
     case "hardware": Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(HardwareProfiler.Probe())); break;
     case "connection" when arguments is [_, "list"]: Write(await store.ListConnectionsAsync(default)); break;
     case "connection" when arguments is [_, "add", var name, var endpoint, var secretEnv, ..]:
@@ -40,4 +42,4 @@ switch (arguments[0].ToLowerInvariant())
 
 static void Write<T>(T value) => Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(value, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
 static string ReadSecret() { var value = new System.Text.StringBuilder(); ConsoleKeyInfo key; while ((key = Console.ReadKey(intercept: true)).Key != ConsoleKey.Enter) { if (key.Key == ConsoleKey.Backspace && value.Length > 0) value.Length--; else if (!char.IsControl(key.KeyChar)) value.Append(key.KeyChar); } Console.WriteLine(); return value.ToString(); }
-static void Help() => Console.WriteLine("DragonKMG: tui | hardware | vault set <name> | connection list | connection add <name> <endpoint> <secret-env> | connection allow-cloud <connection-id> | role add <name> <instructions> | skill add <key> <instructions> | agent add <name> <role-id> <connection-id> <model> | agent list | agent run <id> <input>");
+static void Help() => Console.WriteLine("DragonKMG: [no args] | tui [session-name] | session list | session open <name> | hardware | vault set <name> | connection list | connection add <name> <endpoint> <secret-env> | connection allow-cloud <connection-id> | role add <name> <instructions> | skill add <key> <instructions> | agent add <name> <role-id> <connection-id> <model> | agent list | agent run <id> <input>");

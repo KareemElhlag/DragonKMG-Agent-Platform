@@ -26,6 +26,8 @@ public interface IPlatformStore
     Task<int> RecoverInterruptedRunsAsync(DateTimeOffset recoveredAt, CancellationToken cancellationToken);
     Task SaveAuditEventAsync(AuditEvent auditEvent, CancellationToken cancellationToken);
     Task<IReadOnlyList<AuditEvent>> ListAuditEventsAsync(int limit, CancellationToken cancellationToken);
+    Task<IReadOnlyList<TerminalSession>> ListTerminalSessionsAsync(CancellationToken cancellationToken);
+    Task SaveTerminalSessionAsync(TerminalSession session, CancellationToken cancellationToken);
 }
 
 public interface ISecretResolver

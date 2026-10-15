@@ -17,6 +17,7 @@
 | Agent Framework adapter | CODED | Compiles against Microsoft.Agents.AI 1.23.0; runtime execution adapter remains incomplete. |
 | CLI and authenticated loopback API | PARTIAL | API is loopback by default and requires a shared local token for `/api/*`; an authenticated endpoint smoke test is pending final verification. |
 | Cross-platform terminal control plane | VERIFIED_MOCK | `dragonkmg tui` provides an interactive standard-console UI for selecting agents, changing model/mode, viewing policy state, tracking opened workspace files, and submitting prompts. Build and unit suite pass; interactive terminal usability needs named-device smoke coverage. |
+| Persistent terminal sessions | VERIFIED_MOCK | Running the CLI without arguments opens a persisted default session. Named sessions store the last selected agent in SQLite and can be listed or reopened from the terminal. |
 | Dashboard | VERIFIED_MOCK | Vite production build passed; it persists configuration/assignments and invokes the real Test Agent endpoint. Browser interaction not yet inspected. |
 | Run evidence and interruption recovery | VERIFIED_MOCK | Runs persist in SQLite; API startup marks incomplete `Running` runs as `Failed` with `InterruptedByRestart`, covered by a focused test and exposed in the dashboard history. |
 | Defensive foundation review | VERIFIED_MOCK | Passive Cyber KMG baseline ran: 1 reviewed false positive, 0 Docker-risk matches. |

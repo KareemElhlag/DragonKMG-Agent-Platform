@@ -25,6 +25,8 @@ The API listens on `http://127.0.0.1:5188` by default. It only exposes the healt
 
 Run `dotnet run --project src/DragonKMG.Cli -- tui` for the cross-platform interactive terminal UI. It uses standard console input/output, so it works in Windows Terminal, macOS/Linux terminals, SSH sessions, and mobile terminals that can run .NET.
 
+For a Claude-style entry point, run the installed `dragonkmg` command with no arguments. It opens the persisted `default` session. Use `dragonkmg session open <name>` to enter or create a named session, and `dragonkmg session list` to see saved sessions. The selected agent is restored when that session opens again.
+
 The status header always shows the selected agent, its mode, bound model and connection, cloud policy, assigned-skill count, tool-grant count, and files opened in the current session.
 
 | Command | Purpose |

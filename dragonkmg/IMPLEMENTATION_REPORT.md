@@ -20,6 +20,7 @@
 - Added a durable local audit trail for management API mutations. It records only operation metadata and a one-way local actor identifier, excluding request bodies, prompts, and secrets.
 - Added a real constrained workspace file reader behind the explicit `workspace.file.read` grant. The read-only API requires a configured workspace root and enforces extension, size, binary, link, and path-boundary controls.
 - Added `dragonkmg tui`, a standard-console terminal control plane for cross-platform terminals. It renders agent/model/policy state, supports persistent model and mode changes, tracks open workspace files for the session, and sends prompts to the selected agent.
+- Added persisted terminal sessions. Starting the installed CLI without arguments opens the default session; named sessions can be opened/listed and restore their selected agent through SQLite.
 - Verified dashboard build, .NET build, unit tests, API health, and dashboard-to-API role/skill assignment persistence. The smoke connection had cloud egress disabled and no provider request was made.
 
 ## Known limits

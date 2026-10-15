@@ -6,16 +6,22 @@ namespace DragonKMG.Cli;
 
 internal static class TerminalControlPlane
 {
-    public static async Task RunAsync(IPlatformStore store, PlatformService service, CancellationToken cancellationToken)
+    public static async Task OpenSessionAsync(IPlatformStore store, PlatformService service, string sessionName, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(sessionName)) throw new ArgumentException("Session name is required.");
+        var now = DateTimeOffset.UtcNow;
+        var session = (await store.ListTerminalSessionsAsync(cancellationToken)).FirstOrDefault(value => value.Name.Equals(sessionName, StringComparison.OrdinalIgnoreCase)) ?? new TerminalSession(Guid.NewGuid(), sessionName, null, now, now);
         var openFiles = new List<string>();
-        AgentDefinition? selected = (await store.ListAgentsAsync(cancellationToken)).FirstOrDefault(agent => agent.Enabled);
+        AgentDefinition? selected = session.SelectedAgentId is { } selectedId ? await store.FindAgentAsync(selectedId, cancellationToken) : null;
+        selected ??= (await store.ListAgentsAsync(cancellationToken)).FirstOrDefault(agent => agent.Enabled);
+        session = session with { SelectedAgentId = selected?.Id, LastOpenedAt = now };
+        await store.SaveTerminalSessionAsync(session, cancellationToken);
         while (true)
         {
-            await RenderAsync(store, selected, openFiles, cancellationToken);
+            await RenderAsync(store, selected, openFiles, session, cancellationToken);
             Console.Write("\nDragonKMG › ");
             var line = Console.ReadLine()?.Trim() ?? string.Empty;
-            if (line is "exit" or "quit") return;
+            if (line is "exit" or "quit") { await store.SaveTerminalSessionAsync(session with { SelectedAgentId = selected?.Id, LastOpenedAt = DateTimeOffset.UtcNow }, cancellationToken); return; }
             var split = line.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
             var command = split.ElementAtOrDefault(0)?.ToLowerInvariant();
             var argument = split.ElementAtOrDefault(1) ?? string.Empty;
@@ -25,7 +31,7 @@ internal static class TerminalControlPlane
                 {
                     case "help": PrintHelp(); break;
                     case "agents": PrintAgents(await store.ListAgentsAsync(cancellationToken)); break;
-                    case "use": selected = FindAgent(await store.ListAgentsAsync(cancellationToken), argument); break;
+                    case "use": selected = FindAgent(await store.ListAgentsAsync(cancellationToken), argument); session = session with { SelectedAgentId = selected.Id, LastOpenedAt = DateTimeOffset.UtcNow }; await store.SaveTerminalSessionAsync(session, cancellationToken); break;
                     case "mode" when selected is not null: selected = selected with { Mode = ParseMode(argument), Version = selected.Version + 1, UpdatedAt = DateTimeOffset.UtcNow }; await store.SaveAgentAsync(selected, cancellationToken); break;
                     case "model" when selected is not null: if (string.IsNullOrWhiteSpace(argument)) throw new ArgumentException("Provide a model ID."); selected = selected with { ModelId = argument, Version = selected.Version + 1, UpdatedAt = DateTimeOffset.UtcNow }; await store.SaveAgentAsync(selected, cancellationToken); break;
                     case "open": await OpenAsync(openFiles, argument, cancellationToken); break;
@@ -39,9 +45,9 @@ internal static class TerminalControlPlane
         }
     }
 
-    private static async Task RenderAsync(IPlatformStore store, AgentDefinition? selected, IReadOnlyList<string> openFiles, CancellationToken ct)
+    private static async Task RenderAsync(IPlatformStore store, AgentDefinition? selected, IReadOnlyList<string> openFiles, TerminalSession session, CancellationToken ct)
     {
-        Console.Clear(); Console.WriteLine("DragonKMG Terminal Control Plane  |  local-first, cross-platform"); Console.WriteLine(new string('=', 76));
+        Console.Clear(); Console.WriteLine($"DragonKMG Session: {session.Name}  |  local-first, cross-platform"); Console.WriteLine(new string('=', 76));
         if (selected is null) { Console.WriteLine("Selected agent: none — use 'agents' then 'use <id-or-name>'."); return; }
         var connection = await store.FindConnectionAsync(selected.ConnectionId, ct);
         var skills = await store.ListAssignmentsAsync(selected.Id, ct);
