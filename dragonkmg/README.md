@@ -21,6 +21,25 @@ dotnet run --project src/DragonKMG.Api
 
 The API listens on `http://127.0.0.1:5188` by default. It only exposes the health endpoint without authentication. Every `/api/*` request requires the same value in `X-DragonKMG-Local-Token`.
 
+## Terminal control plane
+
+Run `dotnet run --project src/DragonKMG.Cli -- tui` for the cross-platform interactive terminal UI. It uses standard console input/output, so it works in Windows Terminal, macOS/Linux terminals, SSH sessions, and mobile terminals that can run .NET.
+
+The status header always shows the selected agent, its mode, bound model and connection, cloud policy, assigned-skill count, tool-grant count, and files opened in the current session.
+
+| Command | Purpose |
+| --- | --- |
+| `agents` | List agents with identifiers, modes, and models. |
+| `use <id-or-name>` | Select the agent that receives the next prompt. |
+| `mode <execution\|planonly\|questiononly\|review>` | Persistently switch the selected agent's behavior mode. |
+| `model <model-id>` | Persistently change the selected agent's model binding. |
+| `open <relative-path>` | Read and display a permitted workspace file; it is tracked as open for the session. |
+| `files` | List files opened in the current terminal session. |
+| `prompt <text>` | Run the prompt through the selected agent and its persisted policy. |
+| `help`, `clear`, `exit` | Terminal help and session controls. |
+
+`open` requires `DRAGONKMG_WORKSPACE_ROOT` and keeps the same workspace-file safety restrictions as the API.
+
 Start the dashboard in a second terminal:
 
 ```powershell

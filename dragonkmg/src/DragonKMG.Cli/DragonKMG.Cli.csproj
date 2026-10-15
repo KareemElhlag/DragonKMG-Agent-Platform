@@ -12,5 +12,6 @@
     <ProjectReference Include="..\DragonKMG.Infrastructure\DragonKMG.Infrastructure.csproj" />
     <ProjectReference Include="..\DragonKMG.ModelGateway\DragonKMG.ModelGateway.csproj" />
     <ProjectReference Include="..\DragonKMG.LocalRuntime\DragonKMG.LocalRuntime.csproj" />
+    <ProjectReference Include="..\DragonKMG.ToolGateway\DragonKMG.ToolGateway.csproj" />
   </ItemGroup>
 </Project>
