@@ -57,6 +57,16 @@ public sealed class SafetyTests
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => connector.InvokeAsync(new Uri("https://other.example/webhook"), new { ok = true }, "key", approval, CancellationToken.None));
     }
 
+    [Fact]
+    public void McpDescriptorRequiresTrustedServerGrantAndSchema()
+    {
+        var policy = new McpTrustPolicy(new HashSet<string>(StringComparer.Ordinal) { "mock-server" });
+        Assert.Throws<UnauthorizedAccessException>(() => policy.AuthorizeDescriptor("unknown", "read", "{}", true));
+        Assert.Throws<UnauthorizedAccessException>(() => policy.AuthorizeDescriptor("mock-server", "read", "{}", false));
+        var descriptor = policy.AuthorizeDescriptor("mock-server", "read", "{\"type\":\"object\"}", true);
+        Assert.True(descriptor.Trusted);
+    }
+
     private sealed class CaptureHandler : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
