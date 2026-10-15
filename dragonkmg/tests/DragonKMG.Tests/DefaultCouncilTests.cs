@@ -35,6 +35,16 @@ public sealed class DefaultCouncilTests
             Assert.Equal(3, gateway.Requests.Count);
             Assert.Contains("test-model result", gateway.Requests[1].Input);
             Assert.Equal(2, gateway.Requests[2].Input.Split("test-model result", StringSplitOptions.None).Length - 1);
+
+            var executionAgent = provisioned.Single(agent => agent.Name == "Execution Agent");
+            var toolSkill = new SkillDefinition(Guid.NewGuid(), "repo-search", "Repository Search", "Read-only repository search.", 1, true, SkillType.ToolBacked, "Use repository search only when granted.", "[\"repo.search\"]", "local", "user", "");
+            await store.SaveSkillAsync(toolSkill, CancellationToken.None);
+            var assignments = (await store.ListAssignmentsAsync(executionAgent.Id, CancellationToken.None)).Append(new AgentSkillAssignment(executionAgent.Id, toolSkill.Id, true, 99, "{}", 1)).ToArray();
+            await store.ReplaceAssignmentsAsync(executionAgent.Id, assignments, CancellationToken.None);
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.GetEffectiveConfigurationAsync(executionAgent.Id, CancellationToken.None));
+            await store.ReplaceToolGrantsAsync(executionAgent.Id, [new AgentToolGrant(executionAgent.Id, "repo.search", true, 1)], CancellationToken.None);
+            var configuration = await service.GetEffectiveConfigurationAsync(executionAgent.Id, CancellationToken.None);
+            Assert.Contains(configuration.ToolGrants, grant => grant.ToolId == "repo.search");
         }
         finally
         {

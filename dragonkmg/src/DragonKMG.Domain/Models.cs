@@ -17,6 +17,7 @@ public sealed record SkillDefinition(
     string SourceType = "user", string SourceRef = "");
 
 public sealed record AgentSkillAssignment(Guid AgentId, Guid SkillId, bool Enabled, int Priority, string ConfigurationJson, int Version);
+public sealed record AgentToolGrant(Guid AgentId, string ToolId, bool RequiresApproval, int Version);
 
 public sealed record AgentDefinition(
     Guid Id, string Name, string Description, Guid RoleId, string Instructions, bool Enabled,
@@ -28,4 +29,4 @@ public sealed record AgentRun(
 
 public sealed record EffectiveAgentConfiguration(
     AgentDefinition Agent, AgentRole Role, IReadOnlyList<SkillDefinition> Skills,
-    IReadOnlyList<AgentSkillAssignment> Assignments, string Instructions);
+    IReadOnlyList<AgentSkillAssignment> Assignments, IReadOnlyList<AgentToolGrant> ToolGrants, string Instructions);

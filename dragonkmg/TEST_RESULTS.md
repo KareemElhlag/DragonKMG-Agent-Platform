@@ -12,6 +12,6 @@
 - `dotnet build DragonKMG.sln --no-restore --tl:off`: passed with 0 warnings and 0 errors.
 - `dotnet test DragonKMG.sln --no-restore --tl:off`: passed 6 of 6 tests, including interrupted-run recovery, council provisioning, and sequential evidence handoff.
 - `npm run build`: passed for the production dashboard bundle.
-- `npm run lint`: passed; the current linter emits one non-blocking advisory for the initial data synchronization effect.
+- `npm run lint`: passed with no diagnostics.
 - Local API authentication smoke: an unauthenticated `/api/roles` request returned `401`; the same request with the configured local token returned `200`.
 - Cyber KMG safe baseline: 1 reviewed false positive (SQLite connection-string variable name), 0 Docker-risk matches, and 13 dependency manifests inventoried.

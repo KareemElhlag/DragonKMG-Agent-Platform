@@ -47,6 +47,8 @@ app.MapPost("/api/council/default/run", async (RunRequest value, PlatformService
 app.MapGet("/api/agents/{id:guid}/effective-configuration", async (Guid id, PlatformService service, CancellationToken ct) => Results.Ok(await service.GetEffectiveConfigurationAsync(id, ct)));
 app.MapGet("/api/agents/{id:guid}/skills", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListAssignmentsAsync(id, ct)));
 app.MapPut("/api/agents/{id:guid}/skills", async (Guid id, AgentSkillAssignment[] values, IPlatformStore store, CancellationToken ct) => { if (values.Any(x => x.AgentId != id)) return Results.BadRequest("Every assignment must belong to the route agent."); await store.ReplaceAssignmentsAsync(id, values, ct); return Results.NoContent(); });
+app.MapGet("/api/agents/{id:guid}/tools", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListToolGrantsAsync(id, ct)));
+app.MapPut("/api/agents/{id:guid}/tools", async (Guid id, AgentToolGrant[] values, IPlatformStore store, CancellationToken ct) => { if (values.Any(x => x.AgentId != id)) return Results.BadRequest("Every tool grant must belong to the route agent."); await store.ReplaceToolGrantsAsync(id, values, ct); return Results.NoContent(); });
 app.MapPost("/api/agents/{id:guid}/test", async (Guid id, RunRequest request, PlatformService service, CancellationToken ct) => Results.Ok(await service.RunAgentAsync(id, request.Input, ct)));
 app.MapGet("/api/agents/{id:guid}/runs", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListRunsAsync(id, ct)));
 static bool TokensMatch(string expected, string supplied)

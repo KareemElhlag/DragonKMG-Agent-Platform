@@ -38,6 +38,10 @@ Use **Run council workflow** to execute the stages in this order: Execution → 
 
 The dashboard retrieves and displays the enforced workflow checklist before a run. Every stage is instructed to mark unknowns, blockers, and unchecked items explicitly; it must not claim a check passed without evidence.
 
+## Tool permissions
+
+Tool permissions are independent from skills. Add comma-separated tool IDs under **Agent skills and permissions** for a selected agent. A tool-backed skill is blocked before execution if any ID declared in its `RequiredToolIdsJson` is not explicitly granted. Grants for side-effecting tools retain an approval requirement; this local foundation does not execute host commands or untrusted MCP tools.
+
 ## Configuration boundaries
 
 - `DRAGONKMG_DB_PATH` optionally chooses the SQLite file location.

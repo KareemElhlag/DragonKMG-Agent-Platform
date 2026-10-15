@@ -20,6 +20,7 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
             CREATE TABLE IF NOT EXISTS connections (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, kind INTEGER NOT NULL, endpoint TEXT NOT NULL, secret_reference TEXT NOT NULL, enabled INTEGER NOT NULL, trust_zone INTEGER NOT NULL, cloud_egress_allowed INTEGER NOT NULL, created_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL, role_id TEXT NOT NULL REFERENCES roles(id), instructions TEXT NOT NULL, enabled INTEGER NOT NULL, model_id TEXT NOT NULL, connection_id TEXT NOT NULL REFERENCES connections(id), version INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS agent_skill_assignments (agent_id TEXT NOT NULL REFERENCES agents(id), skill_id TEXT NOT NULL REFERENCES skills(id), enabled INTEGER NOT NULL, priority INTEGER NOT NULL, configuration_json TEXT NOT NULL, version INTEGER NOT NULL, PRIMARY KEY(agent_id, skill_id));
+            CREATE TABLE IF NOT EXISTS agent_tool_grants (agent_id TEXT NOT NULL REFERENCES agents(id), tool_id TEXT NOT NULL, requires_approval INTEGER NOT NULL, version INTEGER NOT NULL, PRIMARY KEY(agent_id, tool_id));
             CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agents(id), agent_version INTEGER NOT NULL, input TEXT NOT NULL, effective_instructions TEXT NOT NULL, status INTEGER NOT NULL, output TEXT NULL, error_code TEXT NULL, started_at TEXT NOT NULL, finished_at TEXT NULL);
             """;
         await command.ExecuteNonQueryAsync(cancellationToken);
@@ -61,6 +62,15 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
         }
         await transaction.CommitAsync(ct);
     }
+    public async Task<IReadOnlyList<AgentToolGrant>> ListToolGrantsAsync(Guid agentId, CancellationToken ct) => await ReadManyAsync("SELECT * FROM agent_tool_grants WHERE agent_id=$id ORDER BY tool_id", ReadToolGrant, ct, ("$id", agentId));
+    public async Task ReplaceToolGrantsAsync(Guid agentId, IReadOnlyList<AgentToolGrant> grants, CancellationToken ct)
+    {
+        if (grants.Any(grant => grant.AgentId != agentId) || grants.Any(grant => string.IsNullOrWhiteSpace(grant.ToolId)) || grants.GroupBy(grant => grant.ToolId, StringComparer.OrdinalIgnoreCase).Any(group => group.Count() > 1)) throw new ArgumentException("Tool grants must have unique non-empty tool IDs and belong to the target agent.", nameof(grants));
+        await using var connection = await OpenAsync(ct); await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(ct);
+        await using (var delete = Command(connection, "DELETE FROM agent_tool_grants WHERE agent_id=$id", ("$id", agentId))) { delete.Transaction = transaction; await delete.ExecuteNonQueryAsync(ct); }
+        foreach (var grant in grants) { await using var insert = Command(connection, "INSERT INTO agent_tool_grants VALUES($agent,$tool,$approval,$version)", ("$agent", grant.AgentId), ("$tool", grant.ToolId.Trim()), ("$approval", grant.RequiresApproval), ("$version", grant.Version)); insert.Transaction = transaction; await insert.ExecuteNonQueryAsync(ct); }
+        await transaction.CommitAsync(ct);
+    }
     public async Task SaveRunAsync(AgentRun value, CancellationToken ct) => await ExecuteAsync("INSERT INTO runs VALUES($id,$agent,$version,$input,$instructions,$status,$output,$error,$started,$finished) ON CONFLICT(id) DO UPDATE SET status=excluded.status,output=excluded.output,error_code=excluded.error_code,finished_at=excluded.finished_at", [ ("$id",value.Id),("$agent",value.AgentId),("$version",value.AgentVersion),("$input",value.Input),("$instructions",value.EffectiveInstructions),("$status",(int)value.Status),("$output",value.Output),("$error",value.ErrorCode),("$started",value.StartedAt),("$finished",value.FinishedAt) ], ct);
     public async Task<IReadOnlyList<AgentRun>> ListRunsAsync(Guid agentId, CancellationToken ct) => await ReadManyAsync("SELECT * FROM runs WHERE agent_id=$id ORDER BY started_at DESC", ReadRun, ct, ("$id", agentId));
     public async Task<int> RecoverInterruptedRunsAsync(DateTimeOffset recoveredAt, CancellationToken ct) => await ExecuteCountAsync("UPDATE runs SET status=$failed,error_code=$error,finished_at=$finished WHERE status=$running AND finished_at IS NULL", [ ("$failed", (int)RunStatus.Failed), ("$error", "InterruptedByRestart"), ("$finished", recoveredAt), ("$running", (int)RunStatus.Running) ], ct);
@@ -79,6 +89,7 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
     private static SkillDefinition ReadSkill(SqliteDataReader r) => new(Id(r,"id"),r.GetString(1),r.GetString(2),r.GetString(3),r.GetInt32(4),r.GetBoolean(5),(SkillType)r.GetInt32(6),r.GetString(7),r.GetString(8),r.GetString(9),r.GetString(10),r.GetString(11));
     private static AgentDefinition ReadAgent(SqliteDataReader r) => new(Id(r,"id"),r.GetString(1),r.GetString(2),Id(r,"role_id"),r.GetString(4),r.GetBoolean(5),r.GetString(6),Id(r,"connection_id"),r.GetInt32(8),Time(r,"created_at"),Time(r,"updated_at"));
     private static AgentSkillAssignment ReadAssignment(SqliteDataReader r) => new(Id(r,"agent_id"),Id(r,"skill_id"),r.GetBoolean(2),r.GetInt32(3),r.GetString(4),r.GetInt32(5));
+    private static AgentToolGrant ReadToolGrant(SqliteDataReader r) => new(Id(r,"agent_id"),r.GetString(1),r.GetBoolean(2),r.GetInt32(3));
     private static AgentRun ReadRun(SqliteDataReader r) => new(Id(r,"id"),Id(r,"agent_id"),r.GetInt32(2),r.GetString(3),r.GetString(4),(RunStatus)r.GetInt32(5),r.IsDBNull(6)?null:r.GetString(6),r.IsDBNull(7)?null:r.GetString(7),Time(r,"started_at"),r.IsDBNull(9)?null:Time(r,"finished_at"));
 }
 

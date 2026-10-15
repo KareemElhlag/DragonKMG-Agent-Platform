@@ -1,4 +1,5 @@
 using DragonKMG.Domain;
+using System.Text.Json;
 
 namespace DragonKMG.Application;
 
@@ -53,11 +54,13 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
             var skill = await store.FindSkillAsync(assignment.SkillId, cancellationToken);
             if (skill is { Enabled: true }) skills.Add(skill);
         }
+        var grants = await store.ListToolGrantsAsync(agentId, cancellationToken);
+        ValidateToolBackedSkills(skills, grants);
 
         var instructionParts = new[] { "You are operating inside DragonKMG. Never bypass tool authorization.", role.DefaultInstructions, agent.Instructions }
             .Concat(skills.Where(x => x.Type == SkillType.Instruction).Select(x => x.InstructionContent))
             .Where(x => !string.IsNullOrWhiteSpace(x));
-        return new EffectiveAgentConfiguration(agent, role, skills, assignments, string.Join("\n\n", instructionParts));
+        return new EffectiveAgentConfiguration(agent, role, skills, assignments, grants, string.Join("\n\n", instructionParts));
     }
 
     public async Task<AgentRun> RunAgentAsync(Guid agentId, string input, CancellationToken cancellationToken)
@@ -99,4 +102,17 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
     }
 
     private static string FormatSteps(IEnumerable<CouncilWorkflowStep> steps) => string.Join("\n", steps.Select(step => $"{step.Name} ({step.Owner})\nChecklist:\n{string.Join("\n", step.Checklist.Select(item => $"- [ ] {item}"))}\nExpected evidence: {step.ExpectedEvidence}"));
+
+    private static void ValidateToolBackedSkills(IEnumerable<SkillDefinition> skills, IReadOnlyList<AgentToolGrant> grants)
+    {
+        var granted = grants.Select(grant => grant.ToolId).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var skill in skills.Where(skill => skill.Type == SkillType.ToolBacked))
+        {
+            string[] required;
+            try { required = JsonSerializer.Deserialize<string[]>(skill.RequiredToolIdsJson) ?? []; }
+            catch (JsonException) { throw new InvalidOperationException($"Tool requirements for skill '{skill.Key}' are invalid."); }
+            var missing = required.Where(toolId => !granted.Contains(toolId)).ToArray();
+            if (missing.Length > 0) throw new UnauthorizedAccessException($"Skill '{skill.Key}' is blocked because tool grants are missing: {string.Join(", ", missing)}.");
+        }
+    }
 }
