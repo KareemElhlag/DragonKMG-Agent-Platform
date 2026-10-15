@@ -1,5 +1,6 @@
 using DragonKMG.ToolGateway;
 using DragonKMG.Domain;
+using System.Net;
 
 namespace DragonKMG.Tests;
 
@@ -43,5 +44,25 @@ public sealed class SafetyTests
         Assert.False(gate.Authorize(pending, now).Allowed);
         Assert.True(gate.Authorize(approved, now).Allowed);
         Assert.False(gate.Authorize(approved, now.AddMinutes(6)).Allowed);
+    }
+
+    [Fact]
+    public async Task N8nWebhookRequiresAllowlistApprovalAndIdempotencyAsync()
+    {
+        using var client = new HttpClient(new CaptureHandler());
+        var connector = new N8nWebhookConnector(client, new ApprovalGate(), new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "automation.example" });
+        var now = DateTimeOffset.UtcNow;
+        var approval = new ApprovalRequest(Guid.NewGuid(), null, "n8n", "test", ApprovalStatus.Approved, now, now.AddMinutes(1), now);
+        await connector.InvokeAsync(new Uri("https://automation.example/webhook"), new { ok = true }, "test-idempotency", approval, CancellationToken.None);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => connector.InvokeAsync(new Uri("https://other.example/webhook"), new { ok = true }, "key", approval, CancellationToken.None));
+    }
+
+    private sealed class CaptureHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Assert.True(request.Headers.Contains("Idempotency-Key"));
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        }
     }
 }
