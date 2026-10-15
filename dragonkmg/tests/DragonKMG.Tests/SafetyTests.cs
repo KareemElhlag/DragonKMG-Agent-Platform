@@ -1,4 +1,5 @@
 using DragonKMG.ToolGateway;
+using DragonKMG.Domain;
 
 namespace DragonKMG.Tests;
 
@@ -29,5 +30,18 @@ public sealed class SafetyTests
 
         // Assert
         Assert.False(decision.Allowed);
+    }
+
+    [Fact]
+    public void SideEffectApprovalMustBeApprovedAndUnexpired()
+    {
+        var gate = new ApprovalGate();
+        var now = DateTimeOffset.UtcNow;
+        var pending = new ApprovalRequest(Guid.NewGuid(), null, "webhook", "test", ApprovalStatus.Pending, now, now.AddMinutes(5), null);
+        var approved = pending with { Status = ApprovalStatus.Approved, ResolvedAt = now };
+
+        Assert.False(gate.Authorize(pending, now).Allowed);
+        Assert.True(gate.Authorize(approved, now).Allowed);
+        Assert.False(gate.Authorize(approved, now.AddMinutes(6)).Allowed);
     }
 }
