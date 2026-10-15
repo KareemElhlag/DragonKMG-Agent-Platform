@@ -4,10 +4,6 @@ namespace DragonKMG.Infrastructure;
 
 internal static class DefaultSkillCatalog
 {
-    internal static readonly AgentRole PrincipalEngineerRole = new(
-        Guid.Parse("83cf1198-54b5-4b52-aabb-d787f2ce4ca1"), "Principal Engineer", "Default DragonKMG engineering role.",
-        "Design small, verifiable changes. Preserve security boundaries and report unverified work explicitly.", true, 1);
-
     internal static readonly IReadOnlyList<SkillDefinition> Skills =
     [
         Create("3d325842-1a75-4937-a97a-91b491a7fdf1", "kmg-engineering-standard", "KMG Engineering Standard", "Lifecycle, evidence, and fail-closed engineering discipline.", "Classify work, preserve clean architecture boundaries, and record only verified claims.", "$kmg-agent-skill"),

@@ -7,6 +7,7 @@
 | Provider connections | VERIFIED_MOCK | Generic OpenAI-compatible endpoint has a mocked response-parser test; no live credential test. |
 | Cloud policy | VERIFIED_MOCK | Cloud connection starts with `CloudEgressAllowed=false`; explicit CLI/Dashboard action persists the approval before execution. |
 | Roles and skills | VERIFIED_MOCK | Dashboard/API persistence and effective-instruction composition smoke-tested. Four KMG-family skills are seeded by default with explicit sources. |
+| Default three-agent council | VERIFIED_MOCK | Explicit provisioning creates Execution, Quality Review, and Security Test agents with the four local default skills. Re-running does not overwrite user-customized agents or assignments; focused test covers creation. |
 | Agent skill authorization | PARTIAL | Tool policy denies ungranted and unsafe execution; granular persisted tool grants are not yet implemented. |
 | Agent Framework adapter | CODED | Compiles against Microsoft.Agents.AI 1.23.0; runtime execution adapter remains incomplete. |
 | CLI and authenticated loopback API | PARTIAL | API is loopback by default and requires a shared local token for `/api/*`; an authenticated endpoint smoke test is pending final verification. |

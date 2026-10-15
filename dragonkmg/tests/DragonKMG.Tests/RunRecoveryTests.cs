@@ -19,7 +19,7 @@ public sealed class RunRecoveryTests
         try
         {
             await store.InitializeAsync(CancellationToken.None);
-            var role = (await store.ListRolesAsync(CancellationToken.None)).Single();
+            var role = (await store.ListRolesAsync(CancellationToken.None)).Single(value => value.Name == "Execution Engineer");
             await store.SaveConnectionAsync(new ProviderConnection(connectionId, "test-connection", ConnectionKind.OpenAiCompatible, new Uri("https://provider.example/"), "env:TEST_SECRET", true, TrustZone.Local, false, now), CancellationToken.None);
             await store.SaveAgentAsync(new AgentDefinition(agentId, "test-agent", "test", role.Id, "instructions", true, "test-model", connectionId, 1, now, now), CancellationToken.None);
             await store.SaveRunAsync(running, CancellationToken.None);

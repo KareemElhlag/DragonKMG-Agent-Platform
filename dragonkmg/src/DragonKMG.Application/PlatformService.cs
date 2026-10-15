@@ -4,6 +4,30 @@ namespace DragonKMG.Application;
 
 public sealed class PlatformService(IPlatformStore store, IModelGateway gateway, ISecretResolver secrets)
 {
+    public async Task<IReadOnlyList<AgentDefinition>> ProvisionDefaultCouncilAsync(DefaultCouncilProvisionRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.ModelId)) throw new ArgumentException("A model ID is required.", nameof(request));
+        var connection = await store.FindConnectionAsync(request.ConnectionId, cancellationToken) ?? throw new KeyNotFoundException("Model connection was not found.");
+        if (!connection.Enabled) throw new InvalidOperationException("Model connection is disabled.");
+        var existing = await store.ListAgentsAsync(cancellationToken);
+        var defaults = (await store.ListSkillsAsync(cancellationToken)).Where(skill => skill.Enabled && skill.SourceType == "local-codex-skill").OrderBy(skill => skill.Name).ToArray();
+        var result = new List<AgentDefinition>();
+        foreach (var template in DefaultCouncil.Agents)
+        {
+            var agent = existing.FirstOrDefault(value => value.Name == template.Name);
+            if (agent is null)
+            {
+                var now = DateTimeOffset.UtcNow;
+                agent = new AgentDefinition(Guid.NewGuid(), template.Name, template.Description, template.RoleId, template.Instructions, true, request.ModelId.Trim(), request.ConnectionId, 1, now, now);
+                await store.SaveAgentAsync(agent, cancellationToken);
+                var assignments = defaults.Select((skill, index) => new AgentSkillAssignment(agent.Id, skill.Id, true, index + 1, "{}", 1)).ToArray();
+                await store.ReplaceAssignmentsAsync(agent.Id, assignments, cancellationToken);
+            }
+            result.Add(agent);
+        }
+        return result;
+    }
+
     public async Task<EffectiveAgentConfiguration> GetEffectiveConfigurationAsync(Guid agentId, CancellationToken cancellationToken)
     {
         var agent = await store.FindAgentAsync(agentId, cancellationToken) ?? throw new KeyNotFoundException("Agent was not found.");

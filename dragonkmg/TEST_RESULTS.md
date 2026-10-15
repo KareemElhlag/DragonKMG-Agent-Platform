@@ -10,7 +10,7 @@
 # Verification results — 2026-10-15
 
 - `dotnet build DragonKMG.sln --no-restore --tl:off`: passed with 0 warnings and 0 errors.
-- `dotnet test DragonKMG.sln --no-restore --tl:off`: passed 5 of 5 tests, including interrupted-run recovery.
+- `dotnet test DragonKMG.sln --no-restore --tl:off`: passed 6 of 6 tests, including interrupted-run recovery and default council provisioning.
 - `npm run build`: passed for the production dashboard bundle.
 - `npm run lint`: passed; the current linter emits one non-blocking advisory for the initial data synchronization effect.
 - Local API authentication smoke: an unauthenticated `/api/roles` request returned `401`; the same request with the configured local token returned `200`.

@@ -25,7 +25,7 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
         await command.ExecuteNonQueryAsync(cancellationToken);
         await EnsureColumnAsync(connection, "skills", "source_type", "TEXT NOT NULL DEFAULT 'user'", cancellationToken);
         await EnsureColumnAsync(connection, "skills", "source_ref", "TEXT NOT NULL DEFAULT ''", cancellationToken);
-        await SaveRoleAsync(DefaultSkillCatalog.PrincipalEngineerRole, cancellationToken);
+        foreach (var role in DefaultCouncil.Roles) await SaveRoleAsync(role, cancellationToken);
         foreach (var skill in DefaultSkillCatalog.Skills) await SaveSkillAsync(skill, cancellationToken);
     }
 

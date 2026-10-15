@@ -24,6 +24,16 @@ npm run dev
 
 Enter the local token in the dashboard header and refresh. It remains only for that browser tab session. Set `VITE_DRAGONKMG_API_URL` before starting Vite if the API address differs.
 
+## Default multi-agent council
+
+After creating a model connection, select it and a model ID in **Default multi-agent council**, then choose **Create default council**. The platform provisions three agents:
+
+- **Execution Agent** implements the approved change.
+- **Quality Review Agent** independently reviews correctness and operational UX.
+- **Security Test Agent** performs defensive review and validates test evidence.
+
+Each new council member receives the four local default skills. The operation is idempotent: it creates missing council members but does not overwrite existing agents or their skill choices. Assignments can be removed individually in **Agent skill assignments**, and custom skills can be created in **Skills library** then assigned to any agent.
+
 ## Configuration boundaries
 
 - `DRAGONKMG_DB_PATH` optionally chooses the SQLite file location.
