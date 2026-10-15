@@ -28,6 +28,8 @@ public interface IPlatformStore
     Task<IReadOnlyList<AuditEvent>> ListAuditEventsAsync(int limit, CancellationToken cancellationToken);
     Task<IReadOnlyList<TerminalSession>> ListTerminalSessionsAsync(CancellationToken cancellationToken);
     Task SaveTerminalSessionAsync(TerminalSession session, CancellationToken cancellationToken);
+    Task SaveSessionMessageAsync(SessionMessage message, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SessionMessage>> ListSessionMessagesAsync(Guid sessionId, int limit, CancellationToken cancellationToken);
 }
 
 public interface ISecretResolver

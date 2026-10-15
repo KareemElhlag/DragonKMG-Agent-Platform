@@ -36,7 +36,13 @@ internal static class TerminalControlPlane
                     case "model" when selected is not null: if (string.IsNullOrWhiteSpace(argument)) throw new ArgumentException("Provide a model ID."); selected = selected with { ModelId = argument, Version = selected.Version + 1, UpdatedAt = DateTimeOffset.UtcNow }; await store.SaveAgentAsync(selected, cancellationToken); break;
                     case "open": await OpenAsync(openFiles, argument, cancellationToken); break;
                     case "files": Console.WriteLine(openFiles.Count == 0 ? "No session files are open." : string.Join(Environment.NewLine, openFiles)); break;
-                    case "prompt" when selected is not null: Console.WriteLine((await service.RunAgentAsync(selected.Id, argument, cancellationToken)).Output); break;
+                    case "prompt" when selected is not null:
+                        await store.SaveSessionMessageAsync(new SessionMessage(Guid.NewGuid(), session.Id, "user", argument, null, DateTimeOffset.UtcNow), cancellationToken);
+                        var run = await service.RunAgentAsync(selected.Id, argument, cancellationToken);
+                        await store.SaveSessionMessageAsync(new SessionMessage(Guid.NewGuid(), session.Id, "assistant", run.Output ?? run.ErrorCode ?? string.Empty, run.Id, DateTimeOffset.UtcNow), cancellationToken);
+                        Console.WriteLine(run.Output); break;
+                    case "chat": await PrintChatAsync(store, session.Id, cancellationToken); break;
+                    case "report": Console.WriteLine(await ExportReportAsync(store, session, selected, cancellationToken)); break;
                     case "clear": Console.Clear(); break;
                     default: Console.WriteLine("Use 'help', or select an agent first with 'use <id-or-name>'."); break;
                 }
@@ -54,7 +60,8 @@ internal static class TerminalControlPlane
         var grants = await store.ListToolGrantsAsync(selected.Id, ct);
         Console.WriteLine($"Agent: {selected.Name}  |  Mode: {selected.Mode}  |  Model: {selected.ModelId}");
         Console.WriteLine($"Connection: {connection?.Name ?? "missing"}  |  Trust: {connection?.TrustZone}  |  Cloud: {(connection?.CloudEgressAllowed == true ? "allowed" : "blocked")}");
-        Console.WriteLine($"Skills: {skills.Count} assigned  |  Tool grants: {grants.Count}  |  Open files this session: {openFiles.Count}");
+        var messages = await store.ListSessionMessagesAsync(session.Id, 1, ct);
+        Console.WriteLine($"Skills: {skills.Count} assigned  |  Tool grants: {grants.Count}  |  Open files: {openFiles.Count}  |  Chat: {messages.Count}+ messages");
         Console.WriteLine("Type 'help' for commands. Prompts run only through the selected agent and its persisted policy.");
     }
 
@@ -68,7 +75,16 @@ internal static class TerminalControlPlane
     }
 
     private static AgentDefinition FindAgent(IEnumerable<AgentDefinition> agents, string value) => agents.FirstOrDefault(agent => agent.Id.ToString().StartsWith(value, StringComparison.OrdinalIgnoreCase) || agent.Name.Equals(value, StringComparison.OrdinalIgnoreCase)) ?? throw new KeyNotFoundException("Agent was not found.");
+    private static async Task PrintChatAsync(IPlatformStore store, Guid sessionId, CancellationToken ct) { foreach (var message in (await store.ListSessionMessagesAsync(sessionId, 100, ct)).Reverse()) Console.WriteLine($"\n[{message.CreatedAt:HH:mm}] {message.Role}:\n{message.Content}"); }
+    private static async Task<string> ExportReportAsync(IPlatformStore store, TerminalSession session, AgentDefinition? agent, CancellationToken ct)
+    {
+        var messages = (await store.ListSessionMessagesAsync(session.Id, 500, ct)).Reverse();
+        var directory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DragonKMG", "reports"); Directory.CreateDirectory(directory);
+        var path = Path.Combine(directory, $"{session.Name}-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.md");
+        var text = $"# DragonKMG session report\n\n- Session: {session.Name}\n- Agent: {agent?.Name ?? "none"}\n- Model: {agent?.ModelId ?? "none"}\n- Generated: {DateTimeOffset.UtcNow:O}\n\n## Conversation\n" + string.Join("\n\n", messages.Select(message => $"### {message.Role} — {message.CreatedAt:O}\n{message.Content}"));
+        await File.WriteAllTextAsync(path, text, ct); return path;
+    }
     private static AgentMode ParseMode(string value) => Enum.TryParse<AgentMode>(value.Replace("-", string.Empty), true, out var mode) ? mode : throw new ArgumentException("Modes: execution, planonly, questiononly, review.");
     private static void PrintAgents(IEnumerable<AgentDefinition> agents) { foreach (var agent in agents) Console.WriteLine($"{agent.Id}  {agent.Name}  [{agent.Mode}]  {agent.ModelId}"); }
-    private static void PrintHelp() => Console.WriteLine("agents | use <id-or-name> | mode <execution|planonly|questiononly|review> | model <model-id> | open <relative-path> | files | prompt <text> | clear | exit");
+    private static void PrintHelp() => Console.WriteLine("agents | use <id-or-name> | mode <execution|planonly|questiononly|review> | model <model-id> | open <relative-path> | files | prompt <text> | chat | report | clear | exit");
 }

@@ -38,9 +38,13 @@ The status header always shows the selected agent, its mode, bound model and con
 | `open <relative-path>` | Read and display a permitted workspace file; it is tracked as open for the session. |
 | `files` | List files opened in the current terminal session. |
 | `prompt <text>` | Run the prompt through the selected agent and its persisted policy. |
+| `chat` | Show the persisted conversation for this session. |
+| `report` | Export a Markdown session report with selected agent/model and conversation. |
 | `help`, `clear`, `exit` | Terminal help and session controls. |
 
 `open` requires `DRAGONKMG_WORKSPACE_ROOT` and keeps the same workspace-file safety restrictions as the API.
+
+Prompts and returned agent outputs are persisted as session messages. Reports are written under the local DragonKMG reports directory and do not include secrets.
 
 Start the dashboard in a second terminal:
 

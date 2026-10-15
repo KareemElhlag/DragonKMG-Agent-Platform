@@ -21,6 +21,7 @@ public sealed record AgentSkillAssignment(Guid AgentId, Guid SkillId, bool Enabl
 public sealed record AgentToolGrant(Guid AgentId, string ToolId, bool RequiresApproval, int Version);
 public sealed record AuditEvent(Guid Id, DateTimeOffset OccurredAt, string Actor, string Action, int StatusCode, string Outcome);
 public sealed record TerminalSession(Guid Id, string Name, Guid? SelectedAgentId, DateTimeOffset CreatedAt, DateTimeOffset LastOpenedAt);
+public sealed record SessionMessage(Guid Id, Guid SessionId, string Role, string Content, Guid? AgentRunId, DateTimeOffset CreatedAt);
 
 public sealed record AgentDefinition(
     Guid Id, string Name, string Description, Guid RoleId, string Instructions, bool Enabled,

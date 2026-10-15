@@ -21,6 +21,7 @@
 - Added a real constrained workspace file reader behind the explicit `workspace.file.read` grant. The read-only API requires a configured workspace root and enforces extension, size, binary, link, and path-boundary controls.
 - Added `dragonkmg tui`, a standard-console terminal control plane for cross-platform terminals. It renders agent/model/policy state, supports persistent model and mode changes, tracks open workspace files for the session, and sends prompts to the selected agent.
 - Added persisted terminal sessions. Starting the installed CLI without arguments opens the default session; named sessions can be opened/listed and restore their selected agent through SQLite.
+- Added persisted terminal session chat and Markdown report export. Prompt/output pairs belong to the session and reports contain selected agent/model context plus the saved conversation, excluding secrets.
 - Verified dashboard build, .NET build, unit tests, API health, and dashboard-to-API role/skill assignment persistence. The smoke connection had cloud egress disabled and no provider request was made.
 
 ## Known limits
