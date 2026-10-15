@@ -42,6 +42,10 @@ The dashboard retrieves and displays the enforced workflow checklist before a ru
 
 Tool permissions are independent from skills. Add comma-separated tool IDs under **Agent skills and permissions** for a selected agent. A tool-backed skill is blocked before execution if any ID declared in its `RequiredToolIdsJson` is not explicitly granted. Grants for side-effecting tools retain an approval requirement; this local foundation does not execute host commands or untrusted MCP tools.
 
+## Agent modes
+
+When creating an agent, choose one of four persisted modes: **Execution**, **Plan only — no code**, **Question only — no code**, or **Review only**. Plan, question, and review modes inject an execution guardrail into the runtime instructions: they may explain scope and evidence, but must not provide source code, patches, commands, or claim an implementation occurred.
+
 ## Configuration boundaries
 
 - `DRAGONKMG_DB_PATH` optionally chooses the SQLite file location.

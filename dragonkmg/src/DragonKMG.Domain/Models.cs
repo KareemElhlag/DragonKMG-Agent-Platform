@@ -4,6 +4,7 @@ public enum ConnectionKind { OpenAiCompatible, Ollama, CustomHttp }
 public enum TrustZone { Local, Cloud, RemoteSelfHosted }
 public enum RunStatus { Queued, Running, Succeeded, Failed, Blocked }
 public enum SkillType { Instruction, ToolBacked, Workflow, Imported }
+public enum AgentMode { Execution, PlanOnly, QuestionOnly, Review }
 
 public sealed record ProviderConnection(
     Guid Id, string Name, ConnectionKind Kind, Uri Endpoint, string SecretReference,
@@ -21,7 +22,7 @@ public sealed record AgentToolGrant(Guid AgentId, string ToolId, bool RequiresAp
 
 public sealed record AgentDefinition(
     Guid Id, string Name, string Description, Guid RoleId, string Instructions, bool Enabled,
-    string ModelId, Guid ConnectionId, int Version, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
+    string ModelId, Guid ConnectionId, int Version, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, AgentMode Mode = AgentMode.Execution);
 
 public sealed record AgentRun(
     Guid Id, Guid AgentId, int AgentVersion, string Input, string EffectiveInstructions,

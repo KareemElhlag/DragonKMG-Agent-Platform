@@ -7,6 +7,7 @@
 | Provider connections | VERIFIED_MOCK | Generic OpenAI-compatible endpoint has a mocked response-parser test; no live credential test. |
 | Cloud policy | VERIFIED_MOCK | Cloud connection starts with `CloudEgressAllowed=false`; explicit CLI/Dashboard action persists the approval before execution. |
 | Roles and skills | VERIFIED_MOCK | Dashboard/API persistence and effective-instruction composition smoke-tested. Four KMG-family skills are seeded by default with explicit sources. |
+| Agent operating modes | VERIFIED_MOCK | Dashboard and SQLite persist Execution, Plan-only, Question-only, and Review modes. Runtime inserts mode-specific no-code/no-execution guardrails for plan, question, and review; focused test covers the plan guardrail. |
 | Default three-agent council | VERIFIED_MOCK | Explicit provisioning creates Execution, Quality Review, and Security Test agents with the four local default skills. Re-running does not overwrite user-customized agents or assignments; focused test covers creation. |
 | Sequential council workflow | VERIFIED_MOCK | The API and dashboard execute Execution → Quality Review → Security Test Review in order. Each stage receives bounded prior evidence and later stages do not start after a failure; mocked focused test covers the handoff. |
 | Workflow stages and checklist | VERIFIED_MOCK | The default council workflow exposes four API-backed stages, owners, checklists, and expected evidence. The runtime injects the applicable checklist and explicit no-invention rule into every stage. |

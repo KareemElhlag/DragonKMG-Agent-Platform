@@ -45,6 +45,12 @@ public sealed class DefaultCouncilTests
             await store.ReplaceToolGrantsAsync(executionAgent.Id, [new AgentToolGrant(executionAgent.Id, "repo.search", true, 1)], CancellationToken.None);
             var configuration = await service.GetEffectiveConfigurationAsync(executionAgent.Id, CancellationToken.None);
             Assert.Contains(configuration.ToolGrants, grant => grant.ToolId == "repo.search");
+
+            var planAgent = new AgentDefinition(Guid.NewGuid(), "plan-agent", "planning", executionAgent.RoleId, "Help plan safely.", true, "test-model", connectionId, 1, now, now, AgentMode.PlanOnly);
+            await store.SaveAgentAsync(planAgent, CancellationToken.None);
+            var planConfiguration = await service.GetEffectiveConfigurationAsync(planAgent.Id, CancellationToken.None);
+            Assert.Contains("plan only", planConfiguration.Instructions, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Do not provide source code", planConfiguration.Instructions, StringComparison.Ordinal);
         }
         finally
         {

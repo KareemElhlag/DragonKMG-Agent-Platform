@@ -57,7 +57,7 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
         var grants = await store.ListToolGrantsAsync(agentId, cancellationToken);
         ValidateToolBackedSkills(skills, grants);
 
-        var instructionParts = new[] { "You are operating inside DragonKMG. Never bypass tool authorization.", role.DefaultInstructions, agent.Instructions }
+        var instructionParts = new[] { "You are operating inside DragonKMG. Never bypass tool authorization.", ModeGuardrail(agent.Mode), role.DefaultInstructions, agent.Instructions }
             .Concat(skills.Where(x => x.Type == SkillType.Instruction).Select(x => x.InstructionContent))
             .Where(x => !string.IsNullOrWhiteSpace(x));
         return new EffectiveAgentConfiguration(agent, role, skills, assignments, grants, string.Join("\n\n", instructionParts));
@@ -115,4 +115,12 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
             if (missing.Length > 0) throw new UnauthorizedAccessException($"Skill '{skill.Key}' is blocked because tool grants are missing: {string.Join(", ", missing)}.");
         }
     }
+
+    private static string ModeGuardrail(AgentMode mode) => mode switch
+    {
+        AgentMode.PlanOnly => "Mode: plan only. Provide scope, assumptions, ordered steps, risks, and acceptance checks. Do not provide source code, patches, commands, or claim implementation occurred.",
+        AgentMode.QuestionOnly => "Mode: answer only. Explain, analyze, and ask precise clarification questions when needed. Do not provide source code, patches, commands, or claim implementation occurred.",
+        AgentMode.Review => "Mode: review only. Assess supplied evidence and report verified findings, risks, and missing checks. Do not implement changes or claim execution occurred.",
+        _ => "Mode: execution. Make only authorized changes and distinguish completed evidence from limitations."
+    };
 }
