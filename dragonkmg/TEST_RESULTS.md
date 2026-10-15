@@ -10,8 +10,11 @@
 # Verification results — 2026-10-15
 
 - `dotnet build DragonKMG.sln --no-restore --tl:off`: passed with 0 warnings and 0 errors.
-- `dotnet test DragonKMG.sln --no-restore --tl:off`: passed 12 of 12 tests, including interrupted-run recovery, council provisioning, sequential evidence handoff, workspace file-reader boundaries, Windows DPAPI vault round-trip, approval gating, n8n policy, MCP trust boundaries, and workflow-DAG cycle validation.
+- `dotnet test DragonKMG.sln --no-restore --tl:off`: passed 16 of 16 tests, including interrupted-run recovery, council provisioning, sequential evidence handoff, workspace file-reader boundaries, Windows DPAPI vault round-trip, approval gating, n8n policy, MCP trust boundaries, and workflow-DAG cycle validation.
 - `npm run build`: passed for the production dashboard bundle.
 - `npm run lint`: passed with no diagnostics.
 - Local API authentication smoke: an unauthenticated `/api/roles` request returned `401`; the same request with the configured local token returned `200`.
 - Cyber KMG safe baseline: 2 reviewed false positives (SQLite connection-string variable name and a test-only fixture), 0 Docker-risk matches, and 13 dependency manifests inventoried.
+- Full skill files: fresh content reload, traversal/size/UTF-8 checks, seed customization preservation, atomic version conflicts, and full default runtime instruction assertions passed.
+- Locale parity: 162 keys per language across Arabic, English, Spanish and German. UI audit: zero findings.
+- Browser skill verification: full KMG entry preview (17,898 characters), default path save/readback (v3), and inline/file source switching passed.

@@ -1,0 +1,7 @@
+interface:
+  display_name: "KMG Engineering"
+  short_description: "Evidence-driven ERP engineering workflow"
+  default_prompt: "Use $kmg-agent-skill to inspect, implement, and verify this repository change with bounded exploration and evidence."
+
+policy:
+  allow_implicit_invocation: true

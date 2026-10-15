@@ -18,10 +18,11 @@ public sealed class DefaultSkillTests
             var skills = await store.ListSkillsAsync(CancellationToken.None);
 
             // Assert
-            Assert.Contains(skills, x => x.Key == "kmg-engineering-standard" && x.SourceRef == "$kmg-agent-skill");
-            Assert.Contains(skills, x => x.Key == "cyber-kmg-security" && x.SourceRef == "$cyber-kmg-security");
-            Assert.Contains(skills, x => x.Key == "nexusecore-ui-ux" && x.SourceRef == "$nexusecore-ui-ux");
-            Assert.Contains(skills, x => x.Key == "flutter-architect-review" && x.SourceRef == "$flutter-architect-review");
+            Assert.Contains(skills, x => x.Key == "kmg-engineering-standard" && x.SourceRef == "kmg-agent-skill/SKILL.md");
+            Assert.Contains(skills, x => x.Key == "cyber-kmg-security" && x.SourceRef == "cyber-kmg-security/SKILL.md");
+            Assert.Contains(skills, x => x.Key == "nexusecore-ui-ux" && x.SourceRef == "nexusecore-ui-ux/SKILL.md");
+            Assert.Contains(skills, x => x.Key == "flutter-architect-review" && x.SourceRef == "flutter-architect-review/SKILL.md");
+            Assert.All(skills, skill => Assert.Equal("project-file", skill.SourceType));
         }
         finally
         {

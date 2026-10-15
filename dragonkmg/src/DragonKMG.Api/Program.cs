@@ -1,4 +1,5 @@
 using DragonKMG.Application;
+using DragonKMG.Api;
 using DragonKMG.Domain;
 using DragonKMG.Infrastructure;
 using DragonKMG.LocalRuntime;
@@ -13,8 +14,14 @@ builder.Services.AddSingleton<IPlatformStore>(_ => new SqlitePlatformStore(datab
 var vaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DragonKMG", "vault");
 builder.Services.AddSingleton(new WindowsDpapiSecretVault(vaultPath));
 builder.Services.AddSingleton<ISecretResolver, CompositeSecretResolver>();
-builder.Services.AddHttpClient<IModelGateway, OpenAiCompatibleGateway>(client => client.Timeout = TimeSpan.FromSeconds(90));
+builder.Services.AddHttpClient<IModelGateway, OpenAiCompatibleGateway>(client => client.Timeout = TimeSpan.FromSeconds(90)).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddHttpClient<IProviderCatalog, OpenAiCompatibleGateway>(client => client.Timeout = TimeSpan.FromSeconds(20)).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddScoped<ProviderConnectionService>();
 builder.Services.AddScoped<PlatformService>();
+builder.Services.AddScoped<SessionConversationService>();
+var projectSkills = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "skills"));
+var skillsRoot = Environment.GetEnvironmentVariable("DRAGONKMG_SKILLS_ROOT") ?? (Directory.Exists(projectSkills) ? projectSkills : Path.Combine(AppContext.BaseDirectory, "skills"));
+builder.Services.AddSingleton<ISkillContentResolver>(new SkillFileResolver(skillsRoot));
 builder.WebHost.UseUrls(Environment.GetEnvironmentVariable("DRAGONKMG_URL") ?? "http://127.0.0.1:5188");
 var app = builder.Build();
 await app.Services.GetRequiredService<IPlatformStore>().InitializeAsync(default);
@@ -51,17 +58,50 @@ app.Use(async (context, next) =>
 });
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", hardware = HardwareProfiler.Probe() }));
+app.MapProviderConnectionRoutes();
+app.MapSessionConversationRoutes();
 app.MapGet("/api/connections", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListConnectionsAsync(ct)));
+app.MapGet("/api/settings/default-connection", async (IPlatformStore store, CancellationToken ct) => Results.Ok(new DefaultConnectionRequest(await store.GetDefaultConnectionAsync(ct))));
+app.MapPut("/api/settings/default-connection", async (DefaultConnectionRequest value, IPlatformStore store, CancellationToken ct) =>
+{
+    if (value.ConnectionId is Guid id && await store.FindConnectionAsync(id, ct) is not { Enabled: true }) return Results.BadRequest("Select an enabled connection.");
+    await store.SetDefaultConnectionAsync(value.ConnectionId, ct);
+    return Results.Ok(value);
+});
 app.MapPost("/api/connections", async (ProviderConnection value, IPlatformStore store, CancellationToken ct) => { ConnectionPolicy.Validate(value); await store.SaveConnectionAsync(value, ct); return Results.Created($"/api/connections/{value.Id}", value); });
 app.MapPut("/api/connections/{id:guid}", async (Guid id, ProviderConnection value, IPlatformStore store, CancellationToken ct) => { if (value.Id != id) return Results.BadRequest("Connection id must match the route."); ConnectionPolicy.Validate(value); await store.SaveConnectionAsync(value, ct); return Results.Ok(value); });
 app.MapGet("/api/roles", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListRolesAsync(ct)));
 app.MapPost("/api/roles", async (AgentRole value, IPlatformStore store, CancellationToken ct) => { await store.SaveRoleAsync(value, ct); return Results.Created($"/api/roles/{value.Id}", value); });
 app.MapGet("/api/skills", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListSkillsAsync(ct)));
-app.MapPost("/api/skills", async (SkillDefinition value, IPlatformStore store, CancellationToken ct) => { var safeValue = value.Type == SkillType.Imported ? value with { Enabled = false, TrustLevel = "untrusted" } : value; await store.SaveSkillAsync(safeValue, ct); return Results.Created($"/api/skills/{safeValue.Id}", safeValue); });
+app.MapGet("/api/skills/files", () => Results.Ok(Directory.EnumerateFiles(skillsRoot, "SKILL.md", new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint | FileAttributes.Hidden }).Take(200).Select(path => Path.GetRelativePath(skillsRoot, path).Replace('\\', '/')).Order().ToArray()));
+app.MapGet("/api/skills/{id:guid}/content", async (Guid id, IPlatformStore store, ISkillContentResolver resolver, CancellationToken ct) =>
+{
+    var skill = await store.FindSkillAsync(id, ct);
+    if (skill is null) return Results.NotFound();
+    return Results.Ok(new { content = await resolver.ResolveAsync(skill, ct), skill.SourceRef });
+});
+app.MapPost("/api/skills", async (SkillDefinition value, IPlatformStore store, ISkillContentResolver resolver, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(value.Key) || string.IsNullOrWhiteSpace(value.Name)) return Results.BadRequest("A skill key and name are required.");
+    if (value.SourceType is not ("user" or "inline" or "project-file" or "local-codex-skill")) return Results.BadRequest("Unsupported skill source type.");
+    try
+    {
+        if (value.SourceType == "project-file") await resolver.ResolveAsync(value, ct);
+        else if (string.IsNullOrWhiteSpace(value.InstructionContent)) return Results.BadRequest("Inline skill instructions are required.");
+    }
+    catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
+    {
+        return Results.BadRequest("Skill file is unavailable, outside the skills directory, or invalid UTF-8 Markdown.");
+    }
+    var safeValue = value.Type == SkillType.Imported ? value with { Enabled = false, TrustLevel = "untrusted" } : value;
+    if (!await store.TrySaveSkillVersionAsync(safeValue, ct)) return Results.Conflict("Skill changed or key already exists. Refresh before saving.");
+    return Results.Created($"/api/skills/{safeValue.Id}", safeValue);
+});
 app.MapGet("/api/agents", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListAgentsAsync(ct)));
 app.MapPost("/api/agents", async (AgentDefinition value, IPlatformStore store, CancellationToken ct) => { await store.SaveAgentAsync(value, ct); return Results.Created($"/api/agents/{value.Id}", value); });
 app.MapPost("/api/council/default", async (DefaultCouncilProvisionRequest value, PlatformService service, CancellationToken ct) => Results.Ok(await service.ProvisionDefaultCouncilAsync(value, ct)));
 app.MapGet("/api/council/default/workflow", () => Results.Ok(DefaultCouncil.Workflow));
+app.MapGet("/api/council/default/templates", () => Results.Ok(DefaultCouncil.Agents));
 app.MapPost("/api/council/default/run", async (RunRequest value, PlatformService service, CancellationToken ct) => Results.Ok(await service.RunDefaultCouncilAsync(value.Input, ct)));
 app.MapGet("/api/workflows", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListWorkflowsAsync(ct)));
 app.MapGet("/api/workflows/{id:guid}", async (Guid id, IPlatformStore store, CancellationToken ct) =>
@@ -108,4 +148,5 @@ static bool TokensMatch(string expected, string supplied)
 app.Run();
 
 public sealed record RunRequest(string Input);
+public sealed record DefaultConnectionRequest(Guid? ConnectionId);
 public sealed record WorkflowDetail(WorkflowDefinition Workflow, IReadOnlyList<WorkflowStage> Stages, IReadOnlyList<WorkflowEdge> Edges);

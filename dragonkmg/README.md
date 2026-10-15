@@ -57,9 +57,11 @@ cd ui
 npm run dev
 ```
 
-Enter the local token in the dashboard header and refresh. It remains only for that browser tab session. Set `VITE_DRAGONKMG_API_URL` before starting Vite if the API address differs.
+Enter the local management token in the dashboard access form and save. It is separate from provider API keys and remains only for that browser tab session. See [Authentication recovery](docs/AUTH_RECOVERY.md). Set `VITE_DRAGONKMG_API_URL` before starting Vite if the API address differs.
 
 ## Default multi-agent council
+
+See [Multi-Agent Swarm Governance — Arabic](docs/MULTI_AGENT_GOVERNANCE.ar.md) for custom teams, workflow operation, implemented security boundaries, and planned capabilities. The three-agent council is a starter template, not a three-agent limit. Custom workflows execute sequentially; automatic task routing, parallel file ownership, and enforced five-role certification are not implemented.
 
 After creating a model connection, select it and a model ID in **Default multi-agent council**, then choose **Create default council**. The platform provisions three agents:
 
@@ -95,4 +97,4 @@ Mutating management API requests are stored in SQLite with timestamp, route/acti
 - Provider endpoints must use HTTPS, except explicit loopback development endpoints.
 - Cloud egress starts disabled for every connection and must be explicitly enabled.
 
-Do not expose this development control plane to a network. It is not a multi-user service and has no durable audit trail or production identity provider integration yet.
+Do not expose this development control plane to a network. It is not a multi-user service and has no production identity provider integration yet. SQLite management-request audit events are durable, but are not a tamper-resistant, comprehensive tool-execution audit trail.

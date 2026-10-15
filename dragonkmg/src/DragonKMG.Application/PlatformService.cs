@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace DragonKMG.Application;
 
-public sealed class PlatformService(IPlatformStore store, IModelGateway gateway, ISecretResolver secrets)
+public sealed class PlatformService(IPlatformStore store, IModelGateway gateway, ISecretResolver secrets, ISkillContentResolver? skillContents = null)
 {
     public async Task<IReadOnlyList<AgentDefinition>> ProvisionDefaultCouncilAsync(DefaultCouncilProvisionRequest request, CancellationToken cancellationToken)
     {
@@ -11,7 +11,7 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
         var connection = await store.FindConnectionAsync(request.ConnectionId, cancellationToken) ?? throw new KeyNotFoundException("Model connection was not found.");
         if (!connection.Enabled) throw new InvalidOperationException("Model connection is disabled.");
         var existing = await store.ListAgentsAsync(cancellationToken);
-        var defaults = (await store.ListSkillsAsync(cancellationToken)).Where(skill => skill.Enabled && skill.SourceType == "local-codex-skill").OrderBy(skill => skill.Name).ToArray();
+        var defaults = (await store.ListSkillsAsync(cancellationToken)).Where(skill => skill.Enabled && skill.TrustLevel == "local-default").OrderBy(skill => skill.Name).ToArray();
         var result = new List<AgentDefinition>();
         foreach (var template in DefaultCouncil.Agents)
         {
@@ -19,7 +19,7 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
             if (agent is null)
             {
                 var now = DateTimeOffset.UtcNow;
-                agent = new AgentDefinition(Guid.NewGuid(), template.Name, template.Description, template.RoleId, template.Instructions, true, request.ModelId.Trim(), request.ConnectionId, 1, now, now);
+                agent = new AgentDefinition(Guid.NewGuid(), template.Name, template.Description, template.RoleId, template.Instructions, true, request.ModelId.Trim(), request.ConnectionId, 1, now, now, template.Name == "Execution Agent" ? AgentMode.Execution : AgentMode.Review);
                 await store.SaveAgentAsync(agent, cancellationToken);
                 var assignments = defaults.Select((skill, index) => new AgentSkillAssignment(agent.Id, skill.Id, true, index + 1, "{}", 1)).ToArray();
                 await store.ReplaceAssignmentsAsync(agent.Id, assignments, cancellationToken);
@@ -69,13 +69,18 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
             }
             run = run with { Status = RunStatus.Succeeded, FinishedAt = DateTimeOffset.UtcNow }; await store.SaveWorkflowRunAsync(run, cancellationToken); return run;
         }
+        catch (OperationCanceledException)
+        {
+            await store.SaveWorkflowRunAsync(run with { Status = RunStatus.Failed, ErrorCode = "OperationCanceled", FinishedAt = DateTimeOffset.UtcNow }, CancellationToken.None);
+            throw;
+        }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             run = run with { Status = RunStatus.Failed, ErrorCode = exception.GetType().Name, FinishedAt = DateTimeOffset.UtcNow }; await store.SaveWorkflowRunAsync(run, cancellationToken); throw;
         }
     }
 
-    public async Task<EffectiveAgentConfiguration> GetEffectiveConfigurationAsync(Guid agentId, CancellationToken cancellationToken)
+    public async Task<EffectiveAgentConfiguration> GetEffectiveConfigurationAsync(Guid agentId, CancellationToken cancellationToken, bool quickChat = false)
     {
         var agent = await store.FindAgentAsync(agentId, cancellationToken) ?? throw new KeyNotFoundException("Agent was not found.");
         var role = await store.FindRoleAsync(agent.RoleId, cancellationToken) ?? throw new InvalidOperationException("Agent role was not found.");
@@ -89,30 +94,49 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
         var grants = await store.ListToolGrantsAsync(agentId, cancellationToken);
         ValidateToolBackedSkills(skills, grants);
 
-        var instructionParts = new[] { "You are operating inside DragonKMG. Never bypass tool authorization.", ModeGuardrail(agent.Mode), role.DefaultInstructions, agent.Instructions }
-            .Concat(skills.Where(x => x.Type == SkillType.Instruction).Select(x => x.InstructionContent))
+        var resolvedInstructions = new List<string>();
+        foreach (var skill in skills.Where(x => !quickChat && x.Type == SkillType.Instruction))
+        {
+            if (skill.SourceType == "project-file" && skillContents is null) throw new InvalidOperationException("A skill-file resolver must be configured.");
+            var content = skillContents is null ? skill.InstructionContent : await skillContents.ResolveAsync(skill, cancellationToken);
+            var digest = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(content)));
+            resolvedInstructions.Add($"Skill: {skill.Key}\nSource: {skill.SourceRef}\nSHA256: {digest}\n{content}");
+        }
+        var instructionParts = new[] { "You are operating inside DragonKMG. Never bypass tool authorization.", ModeGuardrail(agent.Mode), role.DefaultInstructions, agent.Instructions, quickChat ? "Explicit quick conversation profile. Assigned skill bodies are not loaded. Answer briefly. Do not implement changes, produce patches, execute tools or claim tests ran. For implementation or specialist review, ask the user to resend in the full profile." : "" }
+            .Concat(resolvedInstructions)
             .Where(x => !string.IsNullOrWhiteSpace(x));
         return new EffectiveAgentConfiguration(agent, role, skills, assignments, grants, string.Join("\n\n", instructionParts));
     }
 
-    public async Task<AgentRun> RunAgentAsync(Guid agentId, string input, CancellationToken cancellationToken)
+    public async Task<AgentRun> RunAgentAsync(Guid agentId, string input, CancellationToken cancellationToken, bool quickChat = false, bool allowLocalGreeting = false)
     {
         if (string.IsNullOrWhiteSpace(input)) throw new ArgumentException("Input is required.", nameof(input));
-        var config = await GetEffectiveConfigurationAsync(agentId, cancellationToken);
+        var localReply = allowLocalGreeting ? ConversationFastPath.Reply(input) : null;
+        var config = await GetEffectiveConfigurationAsync(agentId, cancellationToken, quickChat || localReply is not null);
         if (!config.Agent.Enabled) throw new InvalidOperationException("Agent is disabled.");
         var connection = await store.FindConnectionAsync(config.Agent.ConnectionId, cancellationToken) ?? throw new InvalidOperationException("Model connection was not found.");
         if (!connection.Enabled) throw new InvalidOperationException("Model connection is disabled.");
         if (connection.TrustZone == TrustZone.Cloud && !connection.CloudEgressAllowed) throw new UnauthorizedAccessException("Cloud egress is not authorized for this connection.");
-        var secret = secrets.Resolve(connection.SecretReference) ?? throw new InvalidOperationException("The configured secret reference is unavailable.");
+        ConnectionPolicy.Validate(connection);
+        var registeredModels = await store.ListConnectionModelsAsync(connection.Id, cancellationToken);
+        var modelId = ModelIdentifier.Canonical(connection.Kind, config.Agent.ModelId);
+        if (registeredModels.Any(model => ModelIdentifier.Canonical(connection.Kind, model.ModelId) == modelId && !model.Enabled)) throw new InvalidOperationException("The selected model is disabled.");
+        var secret = string.IsNullOrWhiteSpace(connection.SecretReference) ? "" : secrets.Resolve(connection.SecretReference) ?? throw new InvalidOperationException("The configured secret reference is unavailable.");
         var started = DateTimeOffset.UtcNow;
-        var run = new AgentRun(Guid.NewGuid(), config.Agent.Id, config.Agent.Version, input, config.Instructions, RunStatus.Running, null, null, started, null);
+        var effectiveInstructions = localReply is not null ? ConversationFastPath.SourceMarker + "\n" + config.Instructions : config.Instructions;
+        var run = new AgentRun(Guid.NewGuid(), config.Agent.Id, config.Agent.Version, input, effectiveInstructions, RunStatus.Running, null, null, started, null);
         await store.SaveRunAsync(run, cancellationToken);
         try
         {
-            var response = await gateway.CompleteAsync(new ModelRequest(connection.Endpoint, secret, config.Agent.ModelId, config.Instructions, input, cancellationToken));
+            var response = localReply is not null ? new ModelResponse(localReply, 0, 0) : await gateway.CompleteAsync(new ModelRequest(connection.Endpoint, secret, modelId, config.Instructions, input, cancellationToken, connection.Kind, quickChat ? 384 : null));
             var completed = run with { Status = RunStatus.Succeeded, Output = response.Text, FinishedAt = DateTimeOffset.UtcNow };
             await store.SaveRunAsync(completed, cancellationToken);
             return completed;
+        }
+        catch (OperationCanceledException)
+        {
+            await store.SaveRunAsync(run with { Status = RunStatus.Failed, ErrorCode = "OperationCanceled", FinishedAt = DateTimeOffset.UtcNow }, CancellationToken.None);
+            throw;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

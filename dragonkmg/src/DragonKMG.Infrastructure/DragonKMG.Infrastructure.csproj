@@ -11,4 +11,11 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.12" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../skills/**/*" Exclude="../../skills/**/temp/**/*;../../skills/**/security-temp/**/*;../../skills/**/project.config.json;../../skills/**/field-lessons.md">
+      <Link>skills/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

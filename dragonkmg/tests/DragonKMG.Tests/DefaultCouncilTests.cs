@@ -17,9 +17,9 @@ public sealed class DefaultCouncilTests
         try
         {
             await store.InitializeAsync(CancellationToken.None);
-            await store.SaveConnectionAsync(new ProviderConnection(connectionId, "council-connection", ConnectionKind.OpenAiCompatible, new Uri("https://provider.example/"), "env:TEST_SECRET", true, TrustZone.Local, false, now), CancellationToken.None);
+            await store.SaveConnectionAsync(new ProviderConnection(connectionId, "council-connection", ConnectionKind.OpenAiCompatible, new Uri("https://provider.example/"), "env:TEST_SECRET", true, TrustZone.RemoteSelfHosted, false, now), CancellationToken.None);
             var gateway = new CapturingGateway();
-            var service = new PlatformService(store, gateway, new TestSecretResolver());
+            var service = new PlatformService(store, gateway, new TestSecretResolver(), new SkillFileResolver(Path.Combine(AppContext.BaseDirectory, "skills")));
 
             var provisioned = await service.ProvisionDefaultCouncilAsync(new DefaultCouncilProvisionRequest(connectionId, "test-model"), CancellationToken.None);
 
@@ -27,6 +27,7 @@ public sealed class DefaultCouncilTests
             Assert.Contains(provisioned, agent => agent.Name == "Execution Agent");
             Assert.Contains(provisioned, agent => agent.Name == "Quality Review Agent");
             Assert.Contains(provisioned, agent => agent.Name == "Security Test Agent");
+            Assert.All(provisioned.Where(agent => agent.Name != "Execution Agent"), agent => Assert.Equal(AgentMode.Review, agent.Mode));
             foreach (var agent in provisioned) Assert.Equal(4, (await store.ListAssignmentsAsync(agent.Id, CancellationToken.None)).Count);
 
             var councilRun = await service.RunDefaultCouncilAsync("Implement inventory validation", CancellationToken.None);
@@ -45,6 +46,8 @@ public sealed class DefaultCouncilTests
             await store.ReplaceToolGrantsAsync(executionAgent.Id, [new AgentToolGrant(executionAgent.Id, "repo.search", true, 1)], CancellationToken.None);
             var configuration = await service.GetEffectiveConfigurationAsync(executionAgent.Id, CancellationToken.None);
             Assert.Contains(configuration.ToolGrants, grant => grant.ToolId == "repo.search");
+            Assert.Contains("# KMG Agent Skill", configuration.Instructions);
+            Assert.Contains("SHA256:", configuration.Instructions);
 
             var planAgent = new AgentDefinition(Guid.NewGuid(), "plan-agent", "planning", executionAgent.RoleId, "Help plan safely.", true, "test-model", connectionId, 1, now, now, AgentMode.PlanOnly);
             await store.SaveAgentAsync(planAgent, CancellationToken.None);

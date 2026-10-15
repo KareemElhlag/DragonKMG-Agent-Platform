@@ -1,6 +1,6 @@
 namespace DragonKMG.Domain;
 
-public enum ConnectionKind { OpenAiCompatible, Ollama, CustomHttp }
+public enum ConnectionKind { OpenAiCompatible, Ollama, CustomHttp, Anthropic, Gemini }
 public enum TrustZone { Local, Cloud, RemoteSelfHosted }
 public enum RunStatus { Queued, Running, Succeeded, Failed, Blocked }
 public enum SkillType { Instruction, ToolBacked, Workflow, Imported }
@@ -12,6 +12,7 @@ public sealed record ProviderConnection(
     bool Enabled, TrustZone TrustZone, bool CloudEgressAllowed, DateTimeOffset CreatedAt);
 
 public sealed record AgentRole(Guid Id, string Name, string Description, string DefaultInstructions, bool IsSystem, int Version);
+public sealed record ConnectionModel(Guid ConnectionId, string ModelId, string DisplayName, bool Enabled, bool IsDefault, string Source, DateTimeOffset UpdatedAt);
 
 public sealed record SkillDefinition(
     Guid Id, string Key, string Name, string Description, int Version, bool Enabled,
