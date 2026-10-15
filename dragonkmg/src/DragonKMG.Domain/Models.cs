@@ -5,6 +5,7 @@ public enum TrustZone { Local, Cloud, RemoteSelfHosted }
 public enum RunStatus { Queued, Running, Succeeded, Failed, Blocked }
 public enum SkillType { Instruction, ToolBacked, Workflow, Imported }
 public enum AgentMode { Execution, PlanOnly, QuestionOnly, Review }
+public enum ApprovalStatus { Pending, Approved, Rejected, Expired }
 
 public sealed record ProviderConnection(
     Guid Id, string Name, ConnectionKind Kind, Uri Endpoint, string SecretReference,
@@ -22,6 +23,7 @@ public sealed record AgentToolGrant(Guid AgentId, string ToolId, bool RequiresAp
 public sealed record AuditEvent(Guid Id, DateTimeOffset OccurredAt, string Actor, string Action, int StatusCode, string Outcome);
 public sealed record TerminalSession(Guid Id, string Name, Guid? SelectedAgentId, DateTimeOffset CreatedAt, DateTimeOffset LastOpenedAt);
 public sealed record SessionMessage(Guid Id, Guid SessionId, string Role, string Content, Guid? AgentRunId, DateTimeOffset CreatedAt);
+public sealed record ApprovalRequest(Guid Id, Guid? AgentRunId, string Action, string Reason, ApprovalStatus Status, DateTimeOffset RequestedAt, DateTimeOffset ExpiresAt, DateTimeOffset? ResolvedAt);
 
 public sealed record AgentDefinition(
     Guid Id, string Name, string Description, Guid RoleId, string Instructions, bool Enabled,

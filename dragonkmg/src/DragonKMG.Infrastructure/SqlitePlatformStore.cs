@@ -25,6 +25,7 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
             CREATE TABLE IF NOT EXISTS audit_events (id TEXT PRIMARY KEY, occurred_at TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, status_code INTEGER NOT NULL, outcome TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS terminal_sessions (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, selected_agent_id TEXT NULL, created_at TEXT NOT NULL, last_opened_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS session_messages (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES terminal_sessions(id), role TEXT NOT NULL, content TEXT NOT NULL, agent_run_id TEXT NULL, created_at TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS approvals (id TEXT PRIMARY KEY, agent_run_id TEXT NULL, action TEXT NOT NULL, reason TEXT NOT NULL, status INTEGER NOT NULL, requested_at TEXT NOT NULL, expires_at TEXT NOT NULL, resolved_at TEXT NULL);
             """;
         await command.ExecuteNonQueryAsync(cancellationToken);
         await EnsureColumnAsync(connection, "skills", "source_type", "TEXT NOT NULL DEFAULT 'user'", cancellationToken);
@@ -84,6 +85,8 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
     public async Task SaveTerminalSessionAsync(TerminalSession value, CancellationToken ct) => await ExecuteAsync("INSERT INTO terminal_sessions VALUES($id,$name,$agent,$created,$opened) ON CONFLICT(id) DO UPDATE SET name=excluded.name,selected_agent_id=excluded.selected_agent_id,last_opened_at=excluded.last_opened_at", [("$id",value.Id),("$name",value.Name),("$agent",value.SelectedAgentId),("$created",value.CreatedAt),("$opened",value.LastOpenedAt)], ct);
     public async Task SaveSessionMessageAsync(SessionMessage value, CancellationToken ct) => await ExecuteAsync("INSERT INTO session_messages VALUES($id,$session,$role,$content,$run,$created)", [("$id",value.Id),("$session",value.SessionId),("$role",value.Role),("$content",value.Content),("$run",value.AgentRunId),("$created",value.CreatedAt)], ct);
     public async Task<IReadOnlyList<SessionMessage>> ListSessionMessagesAsync(Guid sessionId, int limit, CancellationToken ct) => await ReadManyAsync("SELECT * FROM session_messages WHERE session_id=$id ORDER BY created_at DESC LIMIT $limit", ReadSessionMessage, ct, ("$id",sessionId),("$limit",Math.Clamp(limit,1,500)));
+    public async Task SaveApprovalAsync(ApprovalRequest value, CancellationToken ct) => await ExecuteAsync("INSERT INTO approvals VALUES($id,$run,$action,$reason,$status,$requested,$expires,$resolved) ON CONFLICT(id) DO UPDATE SET status=excluded.status,resolved_at=excluded.resolved_at", [("$id",value.Id),("$run",value.AgentRunId),("$action",value.Action),("$reason",value.Reason),("$status",(int)value.Status),("$requested",value.RequestedAt),("$expires",value.ExpiresAt),("$resolved",value.ResolvedAt)], ct);
+    public async Task<IReadOnlyList<ApprovalRequest>> ListApprovalsAsync(CancellationToken ct) => await ReadManyAsync("SELECT * FROM approvals ORDER BY requested_at DESC", ReadApproval, ct);
 
     private async Task<SqliteConnection> OpenAsync(CancellationToken ct) { var connection = new SqliteConnection(_connectionString); await connection.OpenAsync(ct); return connection; }
     private static async Task EnsureColumnAsync(SqliteConnection connection, string table, string column, string definition, CancellationToken ct) { var command = connection.CreateCommand(); command.CommandText = $"PRAGMA table_info({table})"; await using var reader = await command.ExecuteReaderAsync(ct); var exists = false; while (await reader.ReadAsync(ct)) if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase)) { exists = true; break; } if (!exists) { await using var alter = connection.CreateCommand(); alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition}"; await alter.ExecuteNonQueryAsync(ct); } }
@@ -104,6 +107,7 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
     private static AuditEvent ReadAuditEvent(SqliteDataReader r) => new(Id(r,"id"), Time(r,"occurred_at"), r.GetString(2), r.GetString(3), r.GetInt32(4), r.GetString(5));
     private static TerminalSession ReadTerminalSession(SqliteDataReader r) => new(Id(r,"id"),r.GetString(1),r.IsDBNull(2)?null:Id(r,"selected_agent_id"),Time(r,"created_at"),Time(r,"last_opened_at"));
     private static SessionMessage ReadSessionMessage(SqliteDataReader r) => new(Id(r,"id"),Id(r,"session_id"),r.GetString(2),r.GetString(3),r.IsDBNull(4)?null:Id(r,"agent_run_id"),Time(r,"created_at"));
+    private static ApprovalRequest ReadApproval(SqliteDataReader r) => new(Id(r,"id"),r.IsDBNull(1)?null:Id(r,"agent_run_id"),r.GetString(2),r.GetString(3),(ApprovalStatus)r.GetInt32(4),Time(r,"requested_at"),Time(r,"expires_at"),r.IsDBNull(7)?null:Time(r,"resolved_at"));
 }
 
 public sealed class EnvironmentSecretResolver : ISecretResolver

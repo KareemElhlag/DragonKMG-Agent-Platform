@@ -83,6 +83,9 @@ app.MapGet("/api/audit-events", async (int? limit, IPlatformStore store, Cancell
 app.MapGet("/api/sessions", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListTerminalSessionsAsync(ct)));
 app.MapPost("/api/sessions", async (TerminalSession value, IPlatformStore store, CancellationToken ct) => { await store.SaveTerminalSessionAsync(value, ct); return Results.Created($"/api/sessions/{value.Id}", value); });
 app.MapGet("/api/sessions/{id:guid}/messages", async (Guid id, int? limit, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListSessionMessagesAsync(id, limit ?? 100, ct)));
+app.MapGet("/api/approvals", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListApprovalsAsync(ct)));
+app.MapPost("/api/approvals", async (ApprovalRequest value, IPlatformStore store, CancellationToken ct) => { if (value.ExpiresAt <= value.RequestedAt) return Results.BadRequest("Approval expiry must be after request time."); await store.SaveApprovalAsync(value, ct); return Results.Created($"/api/approvals/{value.Id}", value); });
+app.MapPut("/api/approvals/{id:guid}", async (Guid id, ApprovalRequest value, IPlatformStore store, CancellationToken ct) => { if (id != value.Id || value.Status is ApprovalStatus.Pending) return Results.BadRequest("Resolution must target the route approval and be final."); var resolved = value with { ResolvedAt = DateTimeOffset.UtcNow }; await store.SaveApprovalAsync(resolved, ct); return Results.Ok(resolved); });
 static bool TokensMatch(string expected, string supplied)
 {
     var expectedBytes = Encoding.UTF8.GetBytes(expected);

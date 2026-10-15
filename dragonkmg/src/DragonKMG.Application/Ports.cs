@@ -30,6 +30,8 @@ public interface IPlatformStore
     Task SaveTerminalSessionAsync(TerminalSession session, CancellationToken cancellationToken);
     Task SaveSessionMessageAsync(SessionMessage message, CancellationToken cancellationToken);
     Task<IReadOnlyList<SessionMessage>> ListSessionMessagesAsync(Guid sessionId, int limit, CancellationToken cancellationToken);
+    Task SaveApprovalAsync(ApprovalRequest approval, CancellationToken cancellationToken);
+    Task<IReadOnlyList<ApprovalRequest>> ListApprovalsAsync(CancellationToken cancellationToken);
 }
 
 public interface ISecretResolver

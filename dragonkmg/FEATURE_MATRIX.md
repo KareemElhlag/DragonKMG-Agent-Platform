@@ -25,4 +25,5 @@
 | Defensive foundation review | VERIFIED_MOCK | Passive Cyber KMG baseline ran: 1 reviewed false positive, 0 Docker-risk matches. |
 | Windows OS-protected vault | VERIFIED_MOCK | `vault:NAME` resolves through a Windows DPAPI current-user vault, while SQLite stores only the reference. CLI accepts a hidden interactive secret; environment references remain portable fallback. Windows round-trip test passes. |
 | Local audit trail | VERIFIED_MOCK | Mutating management API calls persist timestamp, route, status, outcome, and a one-way token-derived actor identifier. Bodies and secrets are excluded; SQLite persistence is covered by a focused test. |
+| Durable approvals | CODED | SQLite and authenticated API persist pending/approved/rejected/expired approval requests with expiry and resolution time. Tool/integration execution is not yet wired to consume approvals. |
 | MCP, n8n, workflow DAGs | NOT_STARTED | Deferred after P0 foundation; interruption recovery is implemented separately. |
