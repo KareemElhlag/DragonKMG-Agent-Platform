@@ -5,7 +5,7 @@
 | .NET 9 bootstrap | VERIFIED_MOCK | `dotnet build DragonKMG.sln` completed with 0 warnings and 0 errors. |
 | SQLite persistence | VERIFIED_MOCK | API smoke created and read roles, skills, connections, agents, and assignments. |
 | Provider connections | VERIFIED_MOCK | Generic OpenAI-compatible endpoint has a mocked response-parser test; no live credential test. |
-| Cloud policy | VERIFIED_MOCK | Cloud connection starts with `CloudEgressAllowed=false`; application rejects cloud execution. |
+| Cloud policy | VERIFIED_MOCK | Cloud connection starts with `CloudEgressAllowed=false`; explicit CLI/Dashboard action persists the approval before execution. |
 | Roles and skills | VERIFIED_MOCK | Dashboard/API persistence and effective-instruction composition smoke-tested. Four KMG-family skills are seeded by default with explicit sources. |
 | Agent skill authorization | PARTIAL | Tool policy denies ungranted and unsafe execution; granular persisted tool grants are not yet implemented. |
 | Agent Framework adapter | CODED | Compiles against Microsoft.Agents.AI 1.23.0; runtime execution adapter remains incomplete. |

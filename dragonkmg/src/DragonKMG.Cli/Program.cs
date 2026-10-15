@@ -19,6 +19,9 @@ switch (arguments[0].ToLowerInvariant())
     case "connection" when arguments is [_, "add", var name, var endpoint, var secretEnv, ..]:
         var connection = new ProviderConnection(Guid.NewGuid(), name, ConnectionKind.OpenAiCompatible, new Uri(endpoint), $"env:{secretEnv}", true, TrustZone.Cloud, false, DateTimeOffset.UtcNow);
         ConnectionPolicy.Validate(connection); await store.SaveConnectionAsync(connection, default); Console.WriteLine(connection.Id); break;
+    case "connection" when arguments is [_, "allow-cloud", var connectionId, ..]:
+        var existingConnection = await store.FindConnectionAsync(Guid.Parse(connectionId), default) ?? throw new InvalidOperationException("Connection was not found.");
+        await store.SaveConnectionAsync(existingConnection with { CloudEgressAllowed = true }, default); Console.WriteLine("Cloud egress enabled for this connection."); break;
     case "role" when arguments is [_, "add", var name, var instructions, ..]:
         var role = new AgentRole(Guid.NewGuid(), name, name, instructions, false, 1); await store.SaveRoleAsync(role, default); Console.WriteLine(role.Id); break;
     case "skill" when arguments is [_, "add", var key, var instructions, ..]:
@@ -31,4 +34,4 @@ switch (arguments[0].ToLowerInvariant())
 }
 
 static void Write<T>(T value) => Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(value, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-static void Help() => Console.WriteLine("DragonKMG: hardware | connection list | connection add <name> <endpoint> <secret-env> | role add <name> <instructions> | skill add <key> <instructions> | agent add <name> <role-id> <connection-id> <model> | agent list | agent run <id> <input>");
+static void Help() => Console.WriteLine("DragonKMG: hardware | connection list | connection add <name> <endpoint> <secret-env> | connection allow-cloud <connection-id> | role add <name> <instructions> | skill add <key> <instructions> | agent add <name> <role-id> <connection-id> <model> | agent list | agent run <id> <input>");

@@ -9,6 +9,7 @@
 - Added the dashboard Test Agent workflow; it calls the persisted agent execution endpoint and renders returned run evidence rather than simulating a response.
 - Seeded KMG Engineering, Cyber KMG Security, NexusCore UI/UX, and Flutter Architect Review as versioned default instruction skills. Their source references persist in SQLite and they grant no tools.
 - Hardened connection validation: HTTPS is required except for explicit loopback endpoints; only `env:NAME` secret references are accepted. Imported skills are disabled until trusted.
+- Added an explicit persisted cloud-egress consent action in both CLI and Dashboard; creating a connection never enables cloud routing.
 - Verified dashboard build, .NET build, unit tests, API health, and dashboard-to-API role/skill assignment persistence. The smoke connection had cloud egress disabled and no provider request was made.
 
 ## Known limits
