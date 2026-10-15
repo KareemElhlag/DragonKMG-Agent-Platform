@@ -1,0 +1,12 @@
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\bin\Debug\net9.0\DragonKMG.Domain.deps.json
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\bin\Debug\net9.0\DragonKMG.Domain.dll
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\bin\Debug\net9.0\DragonKMG.Domain.pdb
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\obj\Debug\net9.0\DragonKMG.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\obj\Debug\net9.0\DragonKMG.Domain.AssemblyInfoInputs.cache
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\obj\Debug\net9.0\DragonKMG.Domain.AssemblyInfo.cs
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\obj\Debug\net9.0\DragonKMG.Domain.csproj.CoreCompileInputs.cache
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\obj\Debug\net9.0\DragonKMG.Domain.sourcelink.json
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\obj\Debug\net9.0\DragonKMG.Domain.dll
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\obj\Debug\net9.0\refint\DragonKMG.Domain.dll
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\obj\Debug\net9.0\DragonKMG.Domain.pdb
+C:\Users\hp\source\repos\Dragon KMG Agent\DragonKMG-Agent-Platform\dragonkmg\src\DragonKMG.Domain\obj\Debug\net9.0\ref\DragonKMG.Domain.dll

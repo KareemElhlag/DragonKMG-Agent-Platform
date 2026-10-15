@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DragonKMG.Application\DragonKMG.Application.csproj" />
+    <ProjectReference Include="..\DragonKMG.Infrastructure\DragonKMG.Infrastructure.csproj" />
+    <ProjectReference Include="..\DragonKMG.ModelGateway\DragonKMG.ModelGateway.csproj" />
+    <ProjectReference Include="..\DragonKMG.LocalRuntime\DragonKMG.LocalRuntime.csproj" />
+  </ItemGroup>
+</Project>
