@@ -16,9 +16,10 @@
 - Cloud execution is denied unless the connection explicitly allows egress.
 - Imported skills are stored disabled and untrusted by default. Default skill assignments carry no tool grants.
 - Process execution remains denied unless a sandbox is both available and explicitly granted.
+- Every `/api/*` request requires `DRAGONKMG_LOCAL_API_TOKEN` and a matching `X-DragonKMG-Local-Token` header. The comparison is fixed-time, and the dashboard keeps the value only in browser session storage.
 
 ## Residual risk
 
-- Local API authentication, per-user authorization, durable audit trails, endpoint allowlists, and CSRF/session protection are not yet implemented; do not expose the API beyond loopback.
+- The API uses one local shared token, not per-user identity or authorization. Durable audit trails, endpoint allowlists, rate limits, and CSRF protection are not yet implemented; do not expose the API beyond loopback.
 - No live provider, MCP, n8n, Docker, or browser security test was run.
 - No active security tests were performed; they are blocked pending an explicit target, accounts, rate limit, and test window.

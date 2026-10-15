@@ -3,6 +3,8 @@ using DragonKMG.Domain;
 using DragonKMG.Infrastructure;
 using DragonKMG.LocalRuntime;
 using DragonKMG.ModelGateway;
+using System.Security.Cryptography;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 var databasePath = Environment.GetEnvironmentVariable("DRAGONKMG_DB_PATH") ?? Path.Combine(AppContext.BaseDirectory, "dragonkmg.db");
@@ -13,6 +15,20 @@ builder.Services.AddScoped<PlatformService>();
 builder.WebHost.UseUrls(Environment.GetEnvironmentVariable("DRAGONKMG_URL") ?? "http://127.0.0.1:5188");
 var app = builder.Build();
 await app.Services.GetRequiredService<IPlatformStore>().InitializeAsync(default);
+var localApiToken = Environment.GetEnvironmentVariable("DRAGONKMG_LOCAL_API_TOKEN");
+app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
+{
+    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    await context.Response.WriteAsJsonAsync(new { title = "An unexpected server error occurred." });
+}));
+app.Use(async (context, next) =>
+{
+    if (!context.Request.Path.StartsWithSegments("/api")) { await next(context); return; }
+    if (string.IsNullOrWhiteSpace(localApiToken)) { context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable; await context.Response.WriteAsJsonAsync(new { title = "Set DRAGONKMG_LOCAL_API_TOKEN before using the management API." }); return; }
+    var supplied = context.Request.Headers["X-DragonKMG-Local-Token"].ToString();
+    if (!TokensMatch(localApiToken, supplied)) { context.Response.StatusCode = StatusCodes.Status401Unauthorized; await context.Response.WriteAsJsonAsync(new { title = "Local API authentication failed." }); return; }
+    await next(context);
+});
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", hardware = HardwareProfiler.Probe() }));
 app.MapGet("/api/connections", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListConnectionsAsync(ct)));
@@ -29,6 +45,13 @@ app.MapGet("/api/agents/{id:guid}/skills", async (Guid id, IPlatformStore store,
 app.MapPut("/api/agents/{id:guid}/skills", async (Guid id, AgentSkillAssignment[] values, IPlatformStore store, CancellationToken ct) => { if (values.Any(x => x.AgentId != id)) return Results.BadRequest("Every assignment must belong to the route agent."); await store.ReplaceAssignmentsAsync(id, values, ct); return Results.NoContent(); });
 app.MapPost("/api/agents/{id:guid}/test", async (Guid id, RunRequest request, PlatformService service, CancellationToken ct) => Results.Ok(await service.RunAgentAsync(id, request.Input, ct)));
 app.MapGet("/api/agents/{id:guid}/runs", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListRunsAsync(id, ct)));
+static bool TokensMatch(string expected, string supplied)
+{
+    var expectedBytes = Encoding.UTF8.GetBytes(expected);
+    var suppliedBytes = Encoding.UTF8.GetBytes(supplied);
+    return expectedBytes.Length == suppliedBytes.Length && CryptographicOperations.FixedTimeEquals(expectedBytes, suppliedBytes);
+}
+
 app.Run();
 
 public sealed record RunRequest(string Input);
