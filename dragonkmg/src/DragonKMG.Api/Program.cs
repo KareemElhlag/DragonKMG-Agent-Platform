@@ -15,6 +15,7 @@ builder.Services.AddScoped<PlatformService>();
 builder.WebHost.UseUrls(Environment.GetEnvironmentVariable("DRAGONKMG_URL") ?? "http://127.0.0.1:5188");
 var app = builder.Build();
 await app.Services.GetRequiredService<IPlatformStore>().InitializeAsync(default);
+await app.Services.GetRequiredService<IPlatformStore>().RecoverInterruptedRunsAsync(DateTimeOffset.UtcNow, default);
 var localApiToken = Environment.GetEnvironmentVariable("DRAGONKMG_LOCAL_API_TOKEN");
 app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
 {

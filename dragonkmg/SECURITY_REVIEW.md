@@ -17,6 +17,7 @@
 - Imported skills are stored disabled and untrusted by default. Default skill assignments carry no tool grants.
 - Process execution remains denied unless a sandbox is both available and explicitly granted.
 - Every `/api/*` request requires `DRAGONKMG_LOCAL_API_TOKEN` and a matching `X-DragonKMG-Local-Token` header. The comparison is fixed-time, and the dashboard keeps the value only in browser session storage.
+- Incomplete runs are finalized on process restart, retaining a durable error code rather than appearing indefinitely active.
 
 ## Residual risk
 

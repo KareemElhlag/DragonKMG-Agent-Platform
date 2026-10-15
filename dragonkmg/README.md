@@ -2,6 +2,8 @@
 
 DragonKMG is a .NET 9, local-first control plane for governed agent configuration. It persists agent roles, skills, model connections, assignments, and run evidence in SQLite.
 
+On API startup, unfinished runs left in `Running` state by a process interruption are finalized as `Failed` with `InterruptedByRestart`. They are preserved in each agent's run history rather than silently discarded.
+
 ## Safe local startup
 
 The management API is intentionally unavailable until a local token is configured. In PowerShell, set a new value for the current terminal session, then run the API:

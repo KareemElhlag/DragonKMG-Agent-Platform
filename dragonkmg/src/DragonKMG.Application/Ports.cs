@@ -21,6 +21,7 @@ public interface IPlatformStore
     Task ReplaceAssignmentsAsync(Guid agentId, IReadOnlyList<AgentSkillAssignment> assignments, CancellationToken cancellationToken);
     Task SaveRunAsync(AgentRun run, CancellationToken cancellationToken);
     Task<IReadOnlyList<AgentRun>> ListRunsAsync(Guid agentId, CancellationToken cancellationToken);
+    Task<int> RecoverInterruptedRunsAsync(DateTimeOffset recoveredAt, CancellationToken cancellationToken);
 }
 
 public interface ISecretResolver
