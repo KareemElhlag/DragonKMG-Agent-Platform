@@ -17,6 +17,7 @@
 - Added an API-backed four-step workflow contract with an owner, checklist, and expected evidence for every stage. The dashboard displays it before execution, and the runtime injects it into each agent input with explicit “do not invent evidence” instructions.
 - Added persisted per-agent tool grants with dashboard/API management. Tool-backed skills now preflight against the grants and fail closed when required IDs are missing; skills do not confer tool authority.
 - Added persisted agent modes for execution, planning without code, questions without code, and review-only work. The dashboard selects the mode and the runtime applies mode-specific guardrails to new runs.
+- Added a durable local audit trail for management API mutations. It records only operation metadata and a one-way local actor identifier, excluding request bodies, prompts, and secrets.
 - Verified dashboard build, .NET build, unit tests, API health, and dashboard-to-API role/skill assignment persistence. The smoke connection had cloud egress disabled and no provider request was made.
 
 ## Known limits

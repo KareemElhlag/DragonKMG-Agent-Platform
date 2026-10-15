@@ -46,6 +46,10 @@ Tool permissions are independent from skills. Add comma-separated tool IDs under
 
 When creating an agent, choose one of four persisted modes: **Execution**, **Plan only — no code**, **Question only — no code**, or **Review only**. Plan, question, and review modes inject an execution guardrail into the runtime instructions: they may explain scope and evidence, but must not provide source code, patches, commands, or claim an implementation occurred.
 
+## Audit trail
+
+Mutating management API requests are stored in SQLite with timestamp, route/action, outcome, HTTP status, and a short one-way identifier derived from the local API token. Request bodies are deliberately excluded, so task prompts and secret values do not enter the audit trail. Read entries through authenticated `GET /api/audit-events?limit=100`.
+
 ## Configuration boundaries
 
 - `DRAGONKMG_DB_PATH` optionally chooses the SQLite file location.

@@ -30,6 +30,22 @@ app.Use(async (context, next) =>
     if (!TokensMatch(localApiToken, supplied)) { context.Response.StatusCode = StatusCodes.Status401Unauthorized; await context.Response.WriteAsJsonAsync(new { title = "Local API authentication failed." }); return; }
     await next(context);
 });
+app.Use(async (context, next) =>
+{
+    if (!context.Request.Path.StartsWithSegments("/api") || HttpMethods.IsGet(context.Request.Method)) { await next(context); return; }
+    try { await next(context); }
+    finally
+    {
+        try
+        {
+            var token = context.Request.Headers["X-DragonKMG-Local-Token"].ToString();
+            var actor = $"local-token:{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)))[..12].ToLowerInvariant()}";
+            var outcome = context.Response.StatusCode is >= 200 and < 400 ? "succeeded" : "failed";
+            await context.RequestServices.GetRequiredService<IPlatformStore>().SaveAuditEventAsync(new AuditEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, actor, $"{context.Request.Method} {context.Request.Path}", context.Response.StatusCode, outcome), CancellationToken.None);
+        }
+        catch { /* Audit persistence must not replace the original API result. */ }
+    }
+});
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", hardware = HardwareProfiler.Probe() }));
 app.MapGet("/api/connections", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListConnectionsAsync(ct)));
@@ -51,6 +67,7 @@ app.MapGet("/api/agents/{id:guid}/tools", async (Guid id, IPlatformStore store, 
 app.MapPut("/api/agents/{id:guid}/tools", async (Guid id, AgentToolGrant[] values, IPlatformStore store, CancellationToken ct) => { if (values.Any(x => x.AgentId != id)) return Results.BadRequest("Every tool grant must belong to the route agent."); await store.ReplaceToolGrantsAsync(id, values, ct); return Results.NoContent(); });
 app.MapPost("/api/agents/{id:guid}/test", async (Guid id, RunRequest request, PlatformService service, CancellationToken ct) => Results.Ok(await service.RunAgentAsync(id, request.Input, ct)));
 app.MapGet("/api/agents/{id:guid}/runs", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListRunsAsync(id, ct)));
+app.MapGet("/api/audit-events", async (int? limit, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListAuditEventsAsync(limit ?? 100, ct)));
 static bool TokensMatch(string expected, string supplied)
 {
     var expectedBytes = Encoding.UTF8.GetBytes(expected);

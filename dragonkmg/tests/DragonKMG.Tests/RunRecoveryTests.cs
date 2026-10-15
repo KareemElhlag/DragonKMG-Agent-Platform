@@ -31,6 +31,9 @@ public sealed class RunRecoveryTests
             Assert.Equal(1, recovered);
             Assert.Contains(runs, run => run.Id == running.Id && run.Status == RunStatus.Failed && run.ErrorCode == "InterruptedByRestart" && run.FinishedAt is not null);
             Assert.Contains(runs, run => run.Id == completed.Id && run.Status == RunStatus.Succeeded && run.Output == "done");
+            await store.SaveAuditEventAsync(new AuditEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, "test-actor", "POST /api/test", 201, "succeeded"), CancellationToken.None);
+            var auditEvents = await store.ListAuditEventsAsync(10, CancellationToken.None);
+            Assert.Contains(auditEvents, auditEvent => auditEvent.Actor == "test-actor" && auditEvent.StatusCode == 201);
         }
         finally
         {
