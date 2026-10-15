@@ -27,3 +27,7 @@
 - Workflow DAGs, MCP, n8n, approval persistence, and OS vault integration remain incomplete. Interrupted-run recovery and dashboard run history are implemented.
 - The Agent Framework package reference compiles under .NET 9; a full runtime adapter remains to be implemented.
 - The local API has a single shared local token rather than multi-user authentication/authorization, and must remain loopback-only.
+
+## Commercial-edition documentation
+
+- Added `docs/COMMERCIAL_EDITION_ROADMAP.md` as the forward-compatibility and delivery checklist for paid editions. It records the current verified local foundation, non-negotiable upgrade invariants, and evidence gates for vault, identity, approvals, integrations, operations, deployment, and licensing.
