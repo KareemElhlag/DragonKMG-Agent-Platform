@@ -13,7 +13,8 @@ public sealed record AgentRole(Guid Id, string Name, string Description, string 
 
 public sealed record SkillDefinition(
     Guid Id, string Key, string Name, string Description, int Version, bool Enabled,
-    SkillType Type, string InstructionContent, string RequiredToolIdsJson, string TrustLevel);
+    SkillType Type, string InstructionContent, string RequiredToolIdsJson, string TrustLevel,
+    string SourceType = "user", string SourceRef = "");
 
 public sealed record AgentSkillAssignment(Guid AgentId, Guid SkillId, bool Enabled, int Priority, string ConfigurationJson, int Version);
 

@@ -18,7 +18,7 @@ switch (arguments[0].ToLowerInvariant())
     case "connection" when arguments is [_, "list"]: Write(await store.ListConnectionsAsync(default)); break;
     case "connection" when arguments is [_, "add", var name, var endpoint, var secretEnv, ..]:
         var connection = new ProviderConnection(Guid.NewGuid(), name, ConnectionKind.OpenAiCompatible, new Uri(endpoint), $"env:{secretEnv}", true, TrustZone.Cloud, false, DateTimeOffset.UtcNow);
-        await store.SaveConnectionAsync(connection, default); Console.WriteLine(connection.Id); break;
+        ConnectionPolicy.Validate(connection); await store.SaveConnectionAsync(connection, default); Console.WriteLine(connection.Id); break;
     case "role" when arguments is [_, "add", var name, var instructions, ..]:
         var role = new AgentRole(Guid.NewGuid(), name, name, instructions, false, 1); await store.SaveRoleAsync(role, default); Console.WriteLine(role.Id); break;
     case "skill" when arguments is [_, "add", var key, var instructions, ..]:

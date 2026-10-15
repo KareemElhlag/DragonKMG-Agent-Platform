@@ -16,11 +16,11 @@ await app.Services.GetRequiredService<IPlatformStore>().InitializeAsync(default)
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", hardware = HardwareProfiler.Probe() }));
 app.MapGet("/api/connections", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListConnectionsAsync(ct)));
-app.MapPost("/api/connections", async (ProviderConnection value, IPlatformStore store, CancellationToken ct) => { await store.SaveConnectionAsync(value, ct); return Results.Created($"/api/connections/{value.Id}", value); });
+app.MapPost("/api/connections", async (ProviderConnection value, IPlatformStore store, CancellationToken ct) => { ConnectionPolicy.Validate(value); await store.SaveConnectionAsync(value, ct); return Results.Created($"/api/connections/{value.Id}", value); });
 app.MapGet("/api/roles", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListRolesAsync(ct)));
 app.MapPost("/api/roles", async (AgentRole value, IPlatformStore store, CancellationToken ct) => { await store.SaveRoleAsync(value, ct); return Results.Created($"/api/roles/{value.Id}", value); });
 app.MapGet("/api/skills", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListSkillsAsync(ct)));
-app.MapPost("/api/skills", async (SkillDefinition value, IPlatformStore store, CancellationToken ct) => { await store.SaveSkillAsync(value, ct); return Results.Created($"/api/skills/{value.Id}", value); });
+app.MapPost("/api/skills", async (SkillDefinition value, IPlatformStore store, CancellationToken ct) => { var safeValue = value.Type == SkillType.Imported ? value with { Enabled = false, TrustLevel = "untrusted" } : value; await store.SaveSkillAsync(safeValue, ct); return Results.Created($"/api/skills/{safeValue.Id}", safeValue); });
 app.MapGet("/api/agents", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListAgentsAsync(ct)));
 app.MapPost("/api/agents", async (AgentDefinition value, IPlatformStore store, CancellationToken ct) => { await store.SaveAgentAsync(value, ct); return Results.Created($"/api/agents/{value.Id}", value); });
 app.MapGet("/api/agents/{id:guid}/effective-configuration", async (Guid id, PlatformService service, CancellationToken ct) => Results.Ok(await service.GetEffectiveConfigurationAsync(id, ct)));
