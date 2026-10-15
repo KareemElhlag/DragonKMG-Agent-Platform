@@ -36,6 +36,8 @@ Each new council member receives the four local default skills. The operation is
 
 Use **Run council workflow** to execute the stages in this order: Execution → Quality Review → Security Test Review. Each stage receives the original request plus bounded evidence from the stages before it. If a stage fails, later stages are not started.
 
+The dashboard retrieves and displays the enforced workflow checklist before a run. Every stage is instructed to mark unknowns, blockers, and unchecked items explicitly; it must not claim a check passed without evidence.
+
 ## Configuration boundaries
 
 - `DRAGONKMG_DB_PATH` optionally chooses the SQLite file location.

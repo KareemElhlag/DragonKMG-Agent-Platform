@@ -4,6 +4,13 @@ namespace DragonKMG.Application;
 
 public static class DefaultCouncil
 {
+    public static readonly IReadOnlyList<CouncilWorkflowStep> Workflow =
+    [
+        new("Clarify and plan", "Execution Agent", ["Restate scope and constraints", "List assumptions and blockers", "Define verifiable acceptance checks"], "Plan and explicit acceptance evidence."),
+        new("Implement and verify", "Execution Agent", ["Make only scoped changes", "Run relevant checks", "Separate verified evidence from limitations"], "Implementation evidence and remaining risks."),
+        new("Independent quality review", "Quality Review Agent", ["Check requirements against evidence", "Check architecture and user flow", "List missing tests or unsupported claims"], "Findings ordered by impact with evidence."),
+        new("Security and test review", "Security Test Agent", ["Check secrets, authorization, and egress", "Check fail-closed behavior", "Validate test evidence and unresolved risk"], "Defensive findings and final go/no-go rationale.")
+    ];
     public static readonly IReadOnlyList<AgentRole> Roles =
     [
         new(Guid.Parse("83cf1198-54b5-4b52-aabb-d787f2ce4ca1"), "Execution Engineer", "Builds the requested change with verifiable evidence.", "Implement the smallest complete change. Keep boundaries explicit, preserve invariants, and report every limitation.", true, 1),
@@ -22,3 +29,4 @@ public static class DefaultCouncil
 public sealed record CouncilAgentTemplate(string Name, string Description, Guid RoleId, string Instructions);
 public sealed record DefaultCouncilProvisionRequest(Guid ConnectionId, string ModelId);
 public sealed record CouncilRun(Guid ExecutionRunId, Guid QualityReviewRunId, Guid SecurityReviewRunId);
+public sealed record CouncilWorkflowStep(string Name, string Owner, IReadOnlyList<string> Checklist, string ExpectedEvidence);

@@ -36,9 +36,9 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
         var quality = FindCouncilAgent(agents, "Quality Review Agent");
         var security = FindCouncilAgent(agents, "Security Test Agent");
 
-        var executionRun = await RunAgentAsync(execution.Id, input, cancellationToken);
-        var qualityRun = await RunAgentAsync(quality.Id, BuildReviewInput("Quality review", input, executionRun.Output), cancellationToken);
-        var securityRun = await RunAgentAsync(security.Id, BuildReviewInput("Security and test review", input, executionRun.Output, qualityRun.Output), cancellationToken);
+        var executionRun = await RunAgentAsync(execution.Id, BuildWorkflowInput(input, DefaultCouncil.Workflow[0], DefaultCouncil.Workflow[1]), cancellationToken);
+        var qualityRun = await RunAgentAsync(quality.Id, BuildReviewInput(input, [DefaultCouncil.Workflow[2]], executionRun.Output), cancellationToken);
+        var securityRun = await RunAgentAsync(security.Id, BuildReviewInput(input, [DefaultCouncil.Workflow[3]], executionRun.Output, qualityRun.Output), cancellationToken);
         return new CouncilRun(executionRun.Id, qualityRun.Id, securityRun.Id);
     }
 
@@ -89,10 +89,14 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
 
     private static AgentDefinition FindCouncilAgent(IReadOnlyList<AgentDefinition> agents, string name) => agents.FirstOrDefault(agent => agent.Name == name && agent.Enabled) ?? throw new InvalidOperationException($"Default council agent '{name}' is missing or disabled. Provision the council before running it.");
 
-    private static string BuildReviewInput(string stage, string request, params string?[] evidence)
+    private static string BuildWorkflowInput(string request, params CouncilWorkflowStep[] steps) => $"Original request:\n{request}\n\nRequired workflow steps:\n{FormatSteps(steps)}\n\nDo not claim a check passed without evidence. Return the expected evidence and explicitly name unknowns or blockers.";
+
+    private static string BuildReviewInput(string request, IReadOnlyList<CouncilWorkflowStep> steps, params string?[] evidence)
     {
         const int maximumEvidenceCharacters = 12000;
         var material = string.Join("\n\n---\n\n", evidence.Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value!.Length <= maximumEvidenceCharacters ? value : value[..maximumEvidenceCharacters]));
-        return $"{stage}\n\nOriginal request:\n{request}\n\nEvidence from prior stage(s):\n{material}";
+        return $"Original request:\n{request}\n\nRequired workflow steps:\n{FormatSteps(steps)}\n\nEvidence from prior stage(s):\n{material}\n\nDo not invent evidence. Mark every unchecked item and every limitation explicitly.";
     }
+
+    private static string FormatSteps(IEnumerable<CouncilWorkflowStep> steps) => string.Join("\n", steps.Select(step => $"{step.Name} ({step.Owner})\nChecklist:\n{string.Join("\n", step.Checklist.Select(item => $"- [ ] {item}"))}\nExpected evidence: {step.ExpectedEvidence}"));
 }
