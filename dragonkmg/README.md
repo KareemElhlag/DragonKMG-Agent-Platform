@@ -4,6 +4,10 @@ DragonKMG is a .NET 9, local-first control plane for governed agent configuratio
 
 For paid-edition compatibility, upgrade invariants and the remaining commercial delivery checklist are maintained in [Commercial edition roadmap](docs/COMMERCIAL_EDITION_ROADMAP.md).
 
+## Windows vault
+
+On Windows, store a provider secret with `dragonkmg vault set provider_token`; the CLI requests the value without echoing it. Use `vault:provider_token` as the connection secret reference. The value is encrypted with Windows DPAPI for the current Windows user and is not placed in SQLite. `env:NAME` remains the portable fallback. macOS Keychain and Linux Secret Service adapters are planned and are not implemented yet.
+
 On API startup, unfinished runs left in `Running` state by a process interruption are finalized as `Failed` with `InterruptedByRestart`. They are preserved in each agent's run history rather than silently discarded.
 
 ## Safe local startup
