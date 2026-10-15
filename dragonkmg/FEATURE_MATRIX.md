@@ -19,6 +19,7 @@
 | Cross-platform terminal control plane | VERIFIED_MOCK | `dragonkmg tui` provides an interactive standard-console UI for selecting agents, changing model/mode, viewing policy state, tracking opened workspace files, and submitting prompts. Build and unit suite pass; interactive terminal usability needs named-device smoke coverage. |
 | Persistent terminal sessions | VERIFIED_MOCK | Running the CLI without arguments opens a persisted default session. Named sessions store the last selected agent in SQLite and can be listed or reopened from the terminal. |
 | Session chat and report export | VERIFIED_MOCK | Session prompts and returned outputs persist in SQLite. Terminal `chat` displays the transcript and `report` exports selected-agent/model context plus conversation to local Markdown. |
+| Shared terminal/dashboard sessions | VERIFIED_MOCK | Authenticated API exposes persisted sessions and messages; Dashboard Sessions panel displays the same chat history created in terminal sessions. |
 | Dashboard | VERIFIED_MOCK | Vite production build passed; it persists configuration/assignments and invokes the real Test Agent endpoint. Browser interaction not yet inspected. |
 | Run evidence and interruption recovery | VERIFIED_MOCK | Runs persist in SQLite; API startup marks incomplete `Running` runs as `Failed` with `InterruptedByRestart`, covered by a focused test and exposed in the dashboard history. |
 | Defensive foundation review | VERIFIED_MOCK | Passive Cyber KMG baseline ran: 1 reviewed false positive, 0 Docker-risk matches. |

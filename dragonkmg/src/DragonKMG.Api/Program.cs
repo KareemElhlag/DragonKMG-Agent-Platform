@@ -80,6 +80,9 @@ app.MapGet("/api/agents/{id:guid}/tools/workspace-file-read", async (Guid id, st
 app.MapPost("/api/agents/{id:guid}/test", async (Guid id, RunRequest request, PlatformService service, CancellationToken ct) => Results.Ok(await service.RunAgentAsync(id, request.Input, ct)));
 app.MapGet("/api/agents/{id:guid}/runs", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListRunsAsync(id, ct)));
 app.MapGet("/api/audit-events", async (int? limit, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListAuditEventsAsync(limit ?? 100, ct)));
+app.MapGet("/api/sessions", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListTerminalSessionsAsync(ct)));
+app.MapPost("/api/sessions", async (TerminalSession value, IPlatformStore store, CancellationToken ct) => { await store.SaveTerminalSessionAsync(value, ct); return Results.Created($"/api/sessions/{value.Id}", value); });
+app.MapGet("/api/sessions/{id:guid}/messages", async (Guid id, int? limit, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListSessionMessagesAsync(id, limit ?? 100, ct)));
 static bool TokensMatch(string expected, string supplied)
 {
     var expectedBytes = Encoding.UTF8.GetBytes(expected);

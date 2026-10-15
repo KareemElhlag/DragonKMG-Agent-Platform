@@ -46,6 +46,8 @@ The status header always shows the selected agent, its mode, bound model and con
 
 Prompts and returned agent outputs are persisted as session messages. Reports are written under the local DragonKMG reports directory and do not include secrets.
 
+The Dashboard **Sessions** panel uses the same SQLite sessions and messages as the terminal. Open a session in the terminal, then select it in the dashboard to inspect its persisted chat history.
+
 Start the dashboard in a second terminal:
 
 ```powershell
