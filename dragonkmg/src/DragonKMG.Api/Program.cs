@@ -63,6 +63,18 @@ app.MapPost("/api/agents", async (AgentDefinition value, IPlatformStore store, C
 app.MapPost("/api/council/default", async (DefaultCouncilProvisionRequest value, PlatformService service, CancellationToken ct) => Results.Ok(await service.ProvisionDefaultCouncilAsync(value, ct)));
 app.MapGet("/api/council/default/workflow", () => Results.Ok(DefaultCouncil.Workflow));
 app.MapPost("/api/council/default/run", async (RunRequest value, PlatformService service, CancellationToken ct) => Results.Ok(await service.RunDefaultCouncilAsync(value.Input, ct)));
+app.MapGet("/api/workflows", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListWorkflowsAsync(ct)));
+app.MapGet("/api/workflows/{id:guid}", async (Guid id, IPlatformStore store, CancellationToken ct) =>
+{
+    var workflow = await store.FindWorkflowAsync(id, ct); if (workflow is null) return Results.NotFound();
+    return Results.Ok(new WorkflowDetail(workflow, await store.ListWorkflowStagesAsync(id, ct), await store.ListWorkflowEdgesAsync(id, ct)));
+});
+app.MapPut("/api/workflows/{id:guid}", async (Guid id, WorkflowDetail value, IPlatformStore store, CancellationToken ct) =>
+{
+    if (value.Workflow.Id != id) return Results.BadRequest("Workflow id must match the route.");
+    await store.SaveWorkflowAsync(value.Workflow, value.Stages, value.Edges, ct); return Results.Ok(value);
+});
+app.MapPost("/api/workflows/{id:guid}/run", async (Guid id, RunRequest value, PlatformService service, CancellationToken ct) => Results.Ok(await service.RunWorkflowAsync(id, value.Input, ct)));
 app.MapGet("/api/agents/{id:guid}/effective-configuration", async (Guid id, PlatformService service, CancellationToken ct) => Results.Ok(await service.GetEffectiveConfigurationAsync(id, ct)));
 app.MapGet("/api/agents/{id:guid}/skills", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListAssignmentsAsync(id, ct)));
 app.MapPut("/api/agents/{id:guid}/skills", async (Guid id, AgentSkillAssignment[] values, IPlatformStore store, CancellationToken ct) => { if (values.Any(x => x.AgentId != id)) return Results.BadRequest("Every assignment must belong to the route agent."); await store.ReplaceAssignmentsAsync(id, values, ct); return Results.NoContent(); });
@@ -96,3 +108,4 @@ static bool TokensMatch(string expected, string supplied)
 app.Run();
 
 public sealed record RunRequest(string Input);
+public sealed record WorkflowDetail(WorkflowDefinition Workflow, IReadOnlyList<WorkflowStage> Stages, IReadOnlyList<WorkflowEdge> Edges);

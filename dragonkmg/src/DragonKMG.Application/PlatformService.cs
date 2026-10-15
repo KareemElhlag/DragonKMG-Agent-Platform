@@ -43,6 +43,38 @@ public sealed class PlatformService(IPlatformStore store, IModelGateway gateway,
         return new CouncilRun(executionRun.Id, qualityRun.Id, securityRun.Id);
     }
 
+    public async Task<WorkflowRun> RunWorkflowAsync(Guid workflowId, string input, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(input)) throw new ArgumentException("Input is required.", nameof(input));
+        var workflow = await store.FindWorkflowAsync(workflowId, cancellationToken) ?? throw new KeyNotFoundException("Workflow was not found.");
+        if (!workflow.Enabled) throw new InvalidOperationException("Workflow is disabled.");
+        var stages = await store.ListWorkflowStagesAsync(workflowId, cancellationToken); var edges = await store.ListWorkflowEdgesAsync(workflowId, cancellationToken);
+        WorkflowValidator.Validate(workflow, stages, edges);
+        var run = new WorkflowRun(Guid.NewGuid(), workflowId, input, RunStatus.Running, null, DateTimeOffset.UtcNow, null); await store.SaveWorkflowRunAsync(run, cancellationToken);
+        try
+        {
+            var outputs = new Dictionary<Guid, string?>(); var pending = stages.ToDictionary(stage => stage.Id, stage => stage);
+            while (pending.Count > 0)
+            {
+                var ready = pending.Values.Where(stage => edges.Where(edge => edge.ToStageId == stage.Id).All(edge => outputs.ContainsKey(edge.FromStageId))).OrderBy(stage => stage.Position).ToArray();
+                if (ready.Length == 0) throw new InvalidOperationException("Workflow has no executable stage.");
+                foreach (var stage in ready)
+                {
+                    if (stage.RequiresApproval) throw new UnauthorizedAccessException($"Workflow stage '{stage.Name}' requires an explicit approved action before it can execute.");
+                    var checklist = string.Join("\n", JsonSerializer.Deserialize<string[]>(stage.ChecklistJson)!.Select(item => $"- [ ] {item}"));
+                    var evidence = string.Join("\n---\n", edges.Where(edge => edge.ToStageId == stage.Id).Select(edge => outputs[edge.FromStageId]).Where(value => !string.IsNullOrWhiteSpace(value)).Select(value => value!.Length > 12000 ? value[..12000] : value));
+                    var stageInput = $"Original request:\n{input}\n\nWorkflow stage: {stage.Name}\nChecklist:\n{checklist}\nExpected evidence: {stage.ExpectedEvidence}\n\nPrior-stage evidence:\n{evidence}\n\nDo not invent evidence. Explicitly mark each unchecked item and blocker.";
+                    outputs[stage.Id] = (await RunAgentAsync(stage.AgentId, stageInput, cancellationToken)).Output; pending.Remove(stage.Id);
+                }
+            }
+            run = run with { Status = RunStatus.Succeeded, FinishedAt = DateTimeOffset.UtcNow }; await store.SaveWorkflowRunAsync(run, cancellationToken); return run;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            run = run with { Status = RunStatus.Failed, ErrorCode = exception.GetType().Name, FinishedAt = DateTimeOffset.UtcNow }; await store.SaveWorkflowRunAsync(run, cancellationToken); throw;
+        }
+    }
+
     public async Task<EffectiveAgentConfiguration> GetEffectiveConfigurationAsync(Guid agentId, CancellationToken cancellationToken)
     {
         var agent = await store.FindAgentAsync(agentId, cancellationToken) ?? throw new KeyNotFoundException("Agent was not found.");

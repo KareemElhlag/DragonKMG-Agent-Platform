@@ -28,4 +28,4 @@
 | Durable approvals | CODED | SQLite and authenticated API persist pending/approved/rejected/expired approval requests with expiry and resolution time. Tool/integration execution is not yet wired to consume approvals. |
 | MCP trust boundary | CODED | Trusted-server registry policy requires an explicit tool grant and JSON-object input schema; mock-policy test passes. MCP transport/client and tool invocation remain incomplete. |
 | n8n webhook connector | CODED | HTTPS allowlist, active approval, and idempotency key are enforced in a mocked HTTP connector test. API/session configuration and live n8n verification remain incomplete. |
-| Workflow DAGs | NOT_STARTED | Default sequential workflow is implemented, but editable conditional/fan-out DAG definitions are deferred. |
+| Editable workflow DAGs | CODED | Persisted workflow definitions expose stages, checklist JSON, dependency edges, explicit approval gates, and authenticated save/read/run endpoints. Acyclic graph validation and prior-evidence handoff are implemented; conditional routing, parallel worker scheduling, and dashboard editing remain incomplete. |

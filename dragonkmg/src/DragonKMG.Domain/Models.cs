@@ -24,6 +24,10 @@ public sealed record AuditEvent(Guid Id, DateTimeOffset OccurredAt, string Actor
 public sealed record TerminalSession(Guid Id, string Name, Guid? SelectedAgentId, DateTimeOffset CreatedAt, DateTimeOffset LastOpenedAt);
 public sealed record SessionMessage(Guid Id, Guid SessionId, string Role, string Content, Guid? AgentRunId, DateTimeOffset CreatedAt);
 public sealed record ApprovalRequest(Guid Id, Guid? AgentRunId, string Action, string Reason, ApprovalStatus Status, DateTimeOffset RequestedAt, DateTimeOffset ExpiresAt, DateTimeOffset? ResolvedAt);
+public sealed record WorkflowDefinition(Guid Id, string Name, string Description, bool Enabled, int Version, DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt);
+public sealed record WorkflowStage(Guid Id, Guid WorkflowId, string Name, Guid AgentId, int Position, string ChecklistJson, string ExpectedEvidence, bool RequiresApproval);
+public sealed record WorkflowEdge(Guid WorkflowId, Guid FromStageId, Guid ToStageId);
+public sealed record WorkflowRun(Guid Id, Guid WorkflowId, string Input, RunStatus Status, string? ErrorCode, DateTimeOffset StartedAt, DateTimeOffset? FinishedAt);
 
 public sealed record AgentDefinition(
     Guid Id, string Name, string Description, Guid RoleId, string Instructions, bool Enabled,

@@ -26,6 +26,10 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
             CREATE TABLE IF NOT EXISTS terminal_sessions (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, selected_agent_id TEXT NULL, created_at TEXT NOT NULL, last_opened_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS session_messages (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES terminal_sessions(id), role TEXT NOT NULL, content TEXT NOT NULL, agent_run_id TEXT NULL, created_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS approvals (id TEXT PRIMARY KEY, agent_run_id TEXT NULL, action TEXT NOT NULL, reason TEXT NOT NULL, status INTEGER NOT NULL, requested_at TEXT NOT NULL, expires_at TEXT NOT NULL, resolved_at TEXT NULL);
+            CREATE TABLE IF NOT EXISTS workflows (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL, enabled INTEGER NOT NULL, version INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS workflow_stages (id TEXT PRIMARY KEY, workflow_id TEXT NOT NULL REFERENCES workflows(id), name TEXT NOT NULL, agent_id TEXT NOT NULL REFERENCES agents(id), position INTEGER NOT NULL, checklist_json TEXT NOT NULL, expected_evidence TEXT NOT NULL, requires_approval INTEGER NOT NULL, UNIQUE(workflow_id, position));
+            CREATE TABLE IF NOT EXISTS workflow_edges (workflow_id TEXT NOT NULL REFERENCES workflows(id), from_stage_id TEXT NOT NULL REFERENCES workflow_stages(id), to_stage_id TEXT NOT NULL REFERENCES workflow_stages(id), PRIMARY KEY(workflow_id, from_stage_id, to_stage_id));
+            CREATE TABLE IF NOT EXISTS workflow_runs (id TEXT PRIMARY KEY, workflow_id TEXT NOT NULL REFERENCES workflows(id), input TEXT NOT NULL, status INTEGER NOT NULL, error_code TEXT NULL, started_at TEXT NOT NULL, finished_at TEXT NULL);
             """;
         await command.ExecuteNonQueryAsync(cancellationToken);
         await EnsureColumnAsync(connection, "skills", "source_type", "TEXT NOT NULL DEFAULT 'user'", cancellationToken);
@@ -87,6 +91,22 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
     public async Task<IReadOnlyList<SessionMessage>> ListSessionMessagesAsync(Guid sessionId, int limit, CancellationToken ct) => await ReadManyAsync("SELECT * FROM session_messages WHERE session_id=$id ORDER BY created_at DESC LIMIT $limit", ReadSessionMessage, ct, ("$id",sessionId),("$limit",Math.Clamp(limit,1,500)));
     public async Task SaveApprovalAsync(ApprovalRequest value, CancellationToken ct) => await ExecuteAsync("INSERT INTO approvals VALUES($id,$run,$action,$reason,$status,$requested,$expires,$resolved) ON CONFLICT(id) DO UPDATE SET status=excluded.status,resolved_at=excluded.resolved_at", [("$id",value.Id),("$run",value.AgentRunId),("$action",value.Action),("$reason",value.Reason),("$status",(int)value.Status),("$requested",value.RequestedAt),("$expires",value.ExpiresAt),("$resolved",value.ResolvedAt)], ct);
     public async Task<IReadOnlyList<ApprovalRequest>> ListApprovalsAsync(CancellationToken ct) => await ReadManyAsync("SELECT * FROM approvals ORDER BY requested_at DESC", ReadApproval, ct);
+    public async Task<IReadOnlyList<WorkflowDefinition>> ListWorkflowsAsync(CancellationToken ct) => await ReadManyAsync("SELECT * FROM workflows ORDER BY name", ReadWorkflow, ct);
+    public async Task<WorkflowDefinition?> FindWorkflowAsync(Guid id, CancellationToken ct) => await ReadOneAsync("SELECT * FROM workflows WHERE id=$id", "$id", id, ReadWorkflow, ct);
+    public async Task<IReadOnlyList<WorkflowStage>> ListWorkflowStagesAsync(Guid workflowId, CancellationToken ct) => await ReadManyAsync("SELECT * FROM workflow_stages WHERE workflow_id=$id ORDER BY position", ReadWorkflowStage, ct, ("$id", workflowId));
+    public async Task<IReadOnlyList<WorkflowEdge>> ListWorkflowEdgesAsync(Guid workflowId, CancellationToken ct) => await ReadManyAsync("SELECT * FROM workflow_edges WHERE workflow_id=$id", ReadWorkflowEdge, ct, ("$id", workflowId));
+    public async Task SaveWorkflowAsync(WorkflowDefinition workflow, IReadOnlyList<WorkflowStage> stages, IReadOnlyList<WorkflowEdge> edges, CancellationToken ct)
+    {
+        WorkflowValidator.Validate(workflow, stages, edges);
+        await using var connection = await OpenAsync(ct); await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(ct);
+        async Task Execute(string sql, params (string, object?)[] values) { await using var command = Command(connection, sql, values); command.Transaction = transaction; await command.ExecuteNonQueryAsync(ct); }
+        await Execute("INSERT INTO workflows VALUES($id,$name,$description,$enabled,$version,$created,$updated) ON CONFLICT(id) DO UPDATE SET name=excluded.name,description=excluded.description,enabled=excluded.enabled,version=excluded.version,updated_at=excluded.updated_at", ("$id",workflow.Id),("$name",workflow.Name),("$description",workflow.Description),("$enabled",workflow.Enabled),("$version",workflow.Version),("$created",workflow.CreatedAt),("$updated",workflow.UpdatedAt));
+        await Execute("DELETE FROM workflow_edges WHERE workflow_id=$id", ("$id",workflow.Id)); await Execute("DELETE FROM workflow_stages WHERE workflow_id=$id", ("$id",workflow.Id));
+        foreach (var stage in stages) await Execute("INSERT INTO workflow_stages VALUES($id,$workflow,$name,$agent,$position,$checklist,$evidence,$approval)", ("$id",stage.Id),("$workflow",stage.WorkflowId),("$name",stage.Name),("$agent",stage.AgentId),("$position",stage.Position),("$checklist",stage.ChecklistJson),("$evidence",stage.ExpectedEvidence),("$approval",stage.RequiresApproval));
+        foreach (var edge in edges) await Execute("INSERT INTO workflow_edges VALUES($workflow,$from,$to)", ("$workflow",edge.WorkflowId),("$from",edge.FromStageId),("$to",edge.ToStageId));
+        await transaction.CommitAsync(ct);
+    }
+    public async Task SaveWorkflowRunAsync(WorkflowRun run, CancellationToken ct) => await ExecuteAsync("INSERT INTO workflow_runs VALUES($id,$workflow,$input,$status,$error,$started,$finished) ON CONFLICT(id) DO UPDATE SET status=excluded.status,error_code=excluded.error_code,finished_at=excluded.finished_at", [("$id",run.Id),("$workflow",run.WorkflowId),("$input",run.Input),("$status",(int)run.Status),("$error",run.ErrorCode),("$started",run.StartedAt),("$finished",run.FinishedAt)], ct);
 
     private async Task<SqliteConnection> OpenAsync(CancellationToken ct) { var connection = new SqliteConnection(_connectionString); await connection.OpenAsync(ct); return connection; }
     private static async Task EnsureColumnAsync(SqliteConnection connection, string table, string column, string definition, CancellationToken ct) { var command = connection.CreateCommand(); command.CommandText = $"PRAGMA table_info({table})"; await using var reader = await command.ExecuteReaderAsync(ct); var exists = false; while (await reader.ReadAsync(ct)) if (string.Equals(reader.GetString(1), column, StringComparison.OrdinalIgnoreCase)) { exists = true; break; } if (!exists) { await using var alter = connection.CreateCommand(); alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition}"; await alter.ExecuteNonQueryAsync(ct); } }
@@ -108,6 +128,9 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
     private static TerminalSession ReadTerminalSession(SqliteDataReader r) => new(Id(r,"id"),r.GetString(1),r.IsDBNull(2)?null:Id(r,"selected_agent_id"),Time(r,"created_at"),Time(r,"last_opened_at"));
     private static SessionMessage ReadSessionMessage(SqliteDataReader r) => new(Id(r,"id"),Id(r,"session_id"),r.GetString(2),r.GetString(3),r.IsDBNull(4)?null:Id(r,"agent_run_id"),Time(r,"created_at"));
     private static ApprovalRequest ReadApproval(SqliteDataReader r) => new(Id(r,"id"),r.IsDBNull(1)?null:Id(r,"agent_run_id"),r.GetString(2),r.GetString(3),(ApprovalStatus)r.GetInt32(4),Time(r,"requested_at"),Time(r,"expires_at"),r.IsDBNull(7)?null:Time(r,"resolved_at"));
+    private static WorkflowDefinition ReadWorkflow(SqliteDataReader r) => new(Id(r,"id"),r.GetString(1),r.GetString(2),r.GetBoolean(3),r.GetInt32(4),Time(r,"created_at"),Time(r,"updated_at"));
+    private static WorkflowStage ReadWorkflowStage(SqliteDataReader r) => new(Id(r,"id"),Id(r,"workflow_id"),r.GetString(2),Id(r,"agent_id"),r.GetInt32(4),r.GetString(5),r.GetString(6),r.GetBoolean(7));
+    private static WorkflowEdge ReadWorkflowEdge(SqliteDataReader r) => new(Id(r,"workflow_id"),Id(r,"from_stage_id"),Id(r,"to_stage_id"));
 }
 
 public sealed class EnvironmentSecretResolver : ISecretResolver

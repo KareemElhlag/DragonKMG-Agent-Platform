@@ -32,6 +32,12 @@ public interface IPlatformStore
     Task<IReadOnlyList<SessionMessage>> ListSessionMessagesAsync(Guid sessionId, int limit, CancellationToken cancellationToken);
     Task SaveApprovalAsync(ApprovalRequest approval, CancellationToken cancellationToken);
     Task<IReadOnlyList<ApprovalRequest>> ListApprovalsAsync(CancellationToken cancellationToken);
+    Task<IReadOnlyList<WorkflowDefinition>> ListWorkflowsAsync(CancellationToken cancellationToken);
+    Task<WorkflowDefinition?> FindWorkflowAsync(Guid id, CancellationToken cancellationToken);
+    Task SaveWorkflowAsync(WorkflowDefinition workflow, IReadOnlyList<WorkflowStage> stages, IReadOnlyList<WorkflowEdge> edges, CancellationToken cancellationToken);
+    Task<IReadOnlyList<WorkflowStage>> ListWorkflowStagesAsync(Guid workflowId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<WorkflowEdge>> ListWorkflowEdgesAsync(Guid workflowId, CancellationToken cancellationToken);
+    Task SaveWorkflowRunAsync(WorkflowRun run, CancellationToken cancellationToken);
 }
 
 public interface ISecretResolver
