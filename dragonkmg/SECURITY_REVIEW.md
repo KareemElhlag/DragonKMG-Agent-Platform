@@ -8,11 +8,11 @@
 
 ## Results
 
-- Secret-pattern baseline: 1 heuristic match, reviewed as a false positive. It is the private SQLite connection-string variable name; no secret value is stored.
+- Secret-pattern baseline: 2 heuristic matches, both reviewed as false positives: the private SQLite connection-string variable name and a test-only secret fixture. No secret value is stored in production configuration.
 - Docker-risk baseline: 0 matches.
 - Dependency manifests inventoried: 13. Dependency vulnerability scans were not run because no project-specific scanner is configured yet.
 - API binds to `127.0.0.1` by default. Provider endpoints require HTTPS unless they are explicit loopback HTTP endpoints.
-- Provider secret references are limited to `env:NAME`; plaintext values are not persisted.
+- Provider secret references support `env:NAME` and `vault:NAME`; plaintext values are not persisted. On Windows, vault values are protected with DPAPI for the current user.
 - Cloud execution is denied unless the connection explicitly allows egress.
 - Imported skills are stored disabled and untrusted by default. Default skill assignments carry no tool grants.
 - Process execution remains denied unless a sandbox is both available and explicitly granted.
@@ -21,6 +21,6 @@
 
 ## Residual risk
 
-- The API uses one local shared token, not per-user identity or authorization. Durable audit trails, endpoint allowlists, rate limits, and CSRF protection are not yet implemented; do not expose the API beyond loopback.
+- The API uses one local shared token, not per-user identity or authorization. Durable audit trails and integration endpoint allowlists are implemented. Per-user identity, rate limits, CSRF protection, and cross-platform OS vault adapters are not yet implemented; do not expose the API beyond loopback.
 - No live provider, MCP, n8n, Docker, or browser security test was run.
 - No active security tests were performed; they are blocked pending an explicit target, accounts, rate limit, and test window.

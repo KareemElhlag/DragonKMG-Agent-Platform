@@ -23,6 +23,7 @@
 - Added persisted terminal sessions. Starting the installed CLI without arguments opens the default session; named sessions can be opened/listed and restore their selected agent through SQLite.
 - Added persisted terminal session chat and Markdown report export. Prompt/output pairs belong to the session and reports contain selected agent/model context plus the saved conversation, excluding secrets.
 - Added durable approval request contracts and API storage with pending/final state, expiry, and resolution time. Future side-effecting tool integrations must consume this approval record before execution.
+- Added n8n webhook and MCP trust-boundary foundations. n8n enforces HTTPS allowlists, active approvals, and idempotency keys; MCP descriptors require a trusted server, explicit grant, and object schema. Both remain mocked policy/connector paths until configured and live-tested.
 - Verified dashboard build, .NET build, unit tests, API health, and dashboard-to-API role/skill assignment persistence. The smoke connection had cloud egress disabled and no provider request was made.
 
 ## Known limits
