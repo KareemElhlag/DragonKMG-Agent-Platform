@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DragonKMG.Application\DragonKMG.Application.csproj" />
+    <ProjectReference Include="..\DragonKMG.Infrastructure\DragonKMG.Infrastructure.csproj" />
+    <ProjectReference Include="..\DragonKMG.ModelGateway\DragonKMG.ModelGateway.csproj" />
+    <ProjectReference Include="..\DragonKMG.LocalRuntime\DragonKMG.LocalRuntime.csproj" />
+    <ProjectReference Include="..\DragonKMG.ToolGateway\DragonKMG.ToolGateway.csproj" />
+  </ItemGroup>
+</Project>

@@ -258,3 +258,4 @@ dotnet/filtered-*.slnx
 
 **/issues/
 .test_*
+security-temp/
