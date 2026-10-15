@@ -42,6 +42,8 @@ The dashboard retrieves and displays the enforced workflow checklist before a ru
 
 Tool permissions are independent from skills. Add comma-separated tool IDs under **Agent skills and permissions** for a selected agent. A tool-backed skill is blocked before execution if any ID declared in its `RequiredToolIdsJson` is not explicitly granted. Grants for side-effecting tools retain an approval requirement; this local foundation does not execute host commands or untrusted MCP tools.
 
+`workspace.file.read` is a real read-only tool. To use it, grant that exact tool ID to the agent and set `DRAGONKMG_WORKSPACE_ROOT` to an explicit workspace directory. Its authenticated API is `GET /api/agents/{agentId}/tools/workspace-file-read?path=relative/file.md`. It accepts only listed text extensions, enforces the workspace boundary, rejects links, binary data, and files larger than 1 MB.
+
 ## Agent modes
 
 When creating an agent, choose one of four persisted modes: **Execution**, **Plan only — no code**, **Question only — no code**, or **Review only**. Plan, question, and review modes inject an execution guardrail into the runtime instructions: they may explain scope and evidence, but must not provide source code, patches, commands, or claim an implementation occurred.

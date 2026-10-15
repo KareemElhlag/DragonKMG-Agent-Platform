@@ -13,6 +13,7 @@
 | Workflow stages and checklist | VERIFIED_MOCK | The default council workflow exposes four API-backed stages, owners, checklists, and expected evidence. The runtime injects the applicable checklist and explicit no-invention rule into every stage. |
 | Agent skill authorization | PARTIAL | Tool policy and persisted grants fail closed before agent execution. Actual MCP/n8n/host-tool invocation and approval execution remain incomplete. |
 | Persisted agent tool grants | VERIFIED_MOCK | API, SQLite, and dashboard persist explicit per-agent grants. Tool-backed skills are blocked during effective-configuration preflight unless all required IDs are granted; focused test verifies deny then allow behavior. |
+| Restricted workspace file reader | VERIFIED_MOCK | `workspace.file.read` is API-accessible only with an explicit grant and configured workspace root. It blocks path escapes, reparse points, binary files, disallowed extensions, and files above 1 MB; focused boundary test passes. |
 | Agent Framework adapter | CODED | Compiles against Microsoft.Agents.AI 1.23.0; runtime execution adapter remains incomplete. |
 | CLI and authenticated loopback API | PARTIAL | API is loopback by default and requires a shared local token for `/api/*`; an authenticated endpoint smoke test is pending final verification. |
 | Dashboard | VERIFIED_MOCK | Vite production build passed; it persists configuration/assignments and invokes the real Test Agent endpoint. Browser interaction not yet inspected. |

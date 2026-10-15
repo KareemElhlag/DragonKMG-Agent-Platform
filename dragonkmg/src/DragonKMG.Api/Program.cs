@@ -3,6 +3,7 @@ using DragonKMG.Domain;
 using DragonKMG.Infrastructure;
 using DragonKMG.LocalRuntime;
 using DragonKMG.ModelGateway;
+using DragonKMG.ToolGateway;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -65,6 +66,15 @@ app.MapGet("/api/agents/{id:guid}/skills", async (Guid id, IPlatformStore store,
 app.MapPut("/api/agents/{id:guid}/skills", async (Guid id, AgentSkillAssignment[] values, IPlatformStore store, CancellationToken ct) => { if (values.Any(x => x.AgentId != id)) return Results.BadRequest("Every assignment must belong to the route agent."); await store.ReplaceAssignmentsAsync(id, values, ct); return Results.NoContent(); });
 app.MapGet("/api/agents/{id:guid}/tools", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListToolGrantsAsync(id, ct)));
 app.MapPut("/api/agents/{id:guid}/tools", async (Guid id, AgentToolGrant[] values, IPlatformStore store, CancellationToken ct) => { if (values.Any(x => x.AgentId != id)) return Results.BadRequest("Every tool grant must belong to the route agent."); await store.ReplaceToolGrantsAsync(id, values, ct); return Results.NoContent(); });
+app.MapGet("/api/agents/{id:guid}/tools/workspace-file-read", async (Guid id, string path, IPlatformStore store, CancellationToken ct) =>
+{
+    var granted = (await store.ListToolGrantsAsync(id, ct)).Any(grant => string.Equals(grant.ToolId, WorkspaceFileReader.ToolId, StringComparison.OrdinalIgnoreCase));
+    if (!granted) return Results.Forbid();
+    var workspaceRoot = Environment.GetEnvironmentVariable("DRAGONKMG_WORKSPACE_ROOT");
+    if (string.IsNullOrWhiteSpace(workspaceRoot)) return Results.Problem("Set DRAGONKMG_WORKSPACE_ROOT to enable workspace file inspection.", statusCode: StatusCodes.Status503ServiceUnavailable);
+    var reader = new WorkspaceFileReader(workspaceRoot);
+    return Results.Ok(await reader.ReadAsync(path, ct));
+});
 app.MapPost("/api/agents/{id:guid}/test", async (Guid id, RunRequest request, PlatformService service, CancellationToken ct) => Results.Ok(await service.RunAgentAsync(id, request.Input, ct)));
 app.MapGet("/api/agents/{id:guid}/runs", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListRunsAsync(id, ct)));
 app.MapGet("/api/audit-events", async (int? limit, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListAuditEventsAsync(limit ?? 100, ct)));
