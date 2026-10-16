@@ -1,0 +1,15 @@
+.chat-run-record { color: var(--muted); margin-block: 4px 20px; font-size: .72rem; }
+.chat-run-record > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; padding-block: 8px; border-block-end: 1px solid var(--line); }
+.chat-run-record > summary::before { content: "▸"; flex: 0 0 auto; }
+.chat-run-record[open] > summary::before { content: "▾"; }
+.chat-run-record > summary span { flex: 1; overflow-wrap: anywhere; }
+.chat-run-record pre, .chat-message-actions pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface); border: 1px solid var(--line); padding: 12px; border-radius: 8px; max-height: 240px; overflow: auto; font-size: .72rem; }
+.chat-message-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; margin-block-start: 10px; color: var(--muted); font-size: .68rem; }
+.chat-message-actions button { border: 0; padding: 4px 0; color: var(--muted); background: transparent; font-size: inherit; }
+.chat-message-actions summary { padding-block: 4px; cursor: pointer; }
+.chat-message-actions details { min-width: 0; max-width: 100%; }
+.chat-message-actions details[open] { flex-basis: 100%; }
+.chat-messages { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.chat-messages::-webkit-scrollbar { width: 7px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }

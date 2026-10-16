@@ -3,7 +3,7 @@ using DragonKMG.Domain;
 namespace DragonKMG.Application;
 
 public sealed class SessionBusyException : Exception;
-public sealed class SessionConversationService(IPlatformStore store, PlatformService platform)
+public sealed partial class SessionConversationService(IPlatformStore store, PlatformService platform, IWorkspaceFileContextResolver? fileContexts = null)
 {
 
     public async Task<AgentRun> SendAsync(Guid sessionId, Guid agentId, string input, CancellationToken ct, bool quickChat = false)

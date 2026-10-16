@@ -33,12 +33,15 @@ public sealed class TerminalSurface : IDisposable
         entries.Add((kind, text));
         cachedRows = null;
         if (entries.Count > 200) entries.RemoveAt(0);
-        scrollOffset = 0;
+        if (kind == "you") scrollOffset = 0;
+        else if (scrollOffset > 0 && cachedWidth > 0) scrollOffset += Wrap(text, Math.Max(1, cachedWidth - 3)).Count;
         if (!Interactive) Console.WriteLine("[" + kind + "] " + SafeText(text));
     }
 
     public static string SafeText(string text) => new(text.Replace("\r\n", "\n").Replace('\r', '\n')
         .Where(character => character == '\n' || (!char.IsControl(character) && character != '\u007f')).ToArray());
+
+    public void ScrollHistory(int rows) => scrollOffset = Math.Max(0, scrollOffset + rows);
 
     public static IReadOnlyList<string> Wrap(string text, int width)
     {
@@ -239,8 +242,8 @@ public sealed class TerminalSurface : IDisposable
                 return text;
             }
             if (key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control)) { draft.Clear(); caret = 0; }
-            else if (key.Key == ConsoleKey.PageUp) scrollOffset += Math.Max(1, Console.WindowHeight - 10);
-            else if (key.Key == ConsoleKey.PageDown) scrollOffset = Math.Max(0, scrollOffset - Math.Max(1, Console.WindowHeight - 10));
+            else if (key.Key == ConsoleKey.PageUp) ScrollHistory(Math.Max(1, Console.WindowHeight - 10));
+            else if (key.Key == ConsoleKey.PageDown) ScrollHistory(-Math.Max(1, Console.WindowHeight - 10));
             else if (key.Key == ConsoleKey.LeftArrow) caret = MoveVisualCaret(draft.ToString(), caret, left: true);
             else if (key.Key == ConsoleKey.RightArrow) caret = MoveVisualCaret(draft.ToString(), caret, left: false);
             else if (key.Key == ConsoleKey.Home) caret = 0;
@@ -258,17 +261,20 @@ public sealed class TerminalSurface : IDisposable
         return null;
     }
 
-    public async Task<T> TrackAsync<T>(Task<T> operation, CancellationTokenSource cancellation)
+    public async Task<T> TrackAsync<T>(Task<T> operation, CancellationTokenSource cancellation, Action? flushProgress = null)
     {
-        if (!Interactive) { Console.WriteLine("[process] Waiting for provider response…"); return await operation; }
+        if (!Interactive) Console.WriteLine("[process] Waiting for execution response…");
         var started = DateTimeOffset.UtcNow;
         while (!operation.IsCompleted)
         {
+            flushProgress?.Invoke();
             Draw(status: $"Running • {(DateTimeOffset.UtcNow - started).TotalSeconds:F0}s • Ctrl+C cancel");
-            if (Console.KeyAvailable)
+            if (Interactive && Console.KeyAvailable)
             {
                 var key = Console.ReadKey(true);
                 if (key.Key == ConsoleKey.C && key.Modifiers.HasFlag(ConsoleModifiers.Control)) cancellation.Cancel();
+                else if (key.Key == ConsoleKey.PageUp) ScrollHistory(Math.Max(1, Console.WindowHeight - 10));
+                else if (key.Key == ConsoleKey.PageDown) ScrollHistory(-Math.Max(1, Console.WindowHeight - 10));
             }
             await Task.WhenAny(operation, Task.Delay(250));
         }

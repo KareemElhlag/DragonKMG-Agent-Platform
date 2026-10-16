@@ -26,6 +26,13 @@ public sealed class WindowsDpapiSecretVault(string vaultDirectory)
         return Encoding.UTF8.GetString(ProtectedData.Unprotect(File.ReadAllBytes(path), null, DataProtectionScope.CurrentUser));
     }
 
+    public void Remove(string name)
+    {
+        ValidateName(name);
+        if (!OperatingSystem.IsWindows()) throw new PlatformNotSupportedException("Windows DPAPI vault is only available on Windows.");
+        File.Delete(Path.Combine(_vaultDirectory, $"{name}.dpapi"));
+    }
+
     private static void ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name) || name.Any(character => !char.IsLetterOrDigit(character) && character is not '-' and not '_')) throw new ArgumentException("Vault names may contain letters, digits, hyphens, and underscores only.", nameof(name));

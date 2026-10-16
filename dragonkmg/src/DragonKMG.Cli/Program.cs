@@ -16,13 +16,15 @@ var sourceSkills = Path.Combine(Directory.GetCurrentDirectory(), "skills");
 var skillsRoot = Environment.GetEnvironmentVariable("DRAGONKMG_SKILLS_ROOT") ?? (Directory.Exists(sourceSkills) ? sourceSkills : Path.Combine(AppContext.BaseDirectory, "skills"));
 var skillResolver = new SkillFileResolver(skillsRoot);
 var service = new PlatformService(store, new OpenAiCompatibleGateway(httpClient), new CompositeSecretResolver(vault), skillResolver);
+var fileContexts = new WorkspaceFileContextResolver();
+var github = new GitHubIntegration(httpClient, new GitHubCredentialVault(vault), store, db);
 var arguments = args.ToList();
-if (arguments.Count == 0) { await TerminalControlPlane.OpenSessionAsync(store, service, "default", default); return; }
+if (arguments.Count == 0) { await TerminalControlPlane.OpenSessionAsync(store, service, "default", default, fileContexts, github); return; }
 switch (arguments[0].ToLowerInvariant())
 {
-    case "tui": await TerminalControlPlane.OpenSessionAsync(store, service, arguments.ElementAtOrDefault(1) ?? "default", default); break;
+    case "tui": await TerminalControlPlane.OpenSessionAsync(store, service, arguments.ElementAtOrDefault(1) ?? "default", default, fileContexts, github); break;
     case "session" when arguments is [_, "list"]: Write(await store.ListTerminalSessionsAsync(default)); break;
-    case "session" when arguments is [_, "open", var sessionName, ..]: await TerminalControlPlane.OpenSessionAsync(store, service, sessionName, default); break;
+    case "session" when arguments is [_, "open", var sessionName, ..]: await TerminalControlPlane.OpenSessionAsync(store, service, sessionName, default, fileContexts, github); break;
     case "hardware": Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(HardwareProfiler.Probe())); break;
     case "connection" when arguments is [_, "list"]: Write(await store.ListConnectionsAsync(default)); break;
     case "connection" when arguments is [_, "add", var name, var endpoint, var secretEnv, ..]:

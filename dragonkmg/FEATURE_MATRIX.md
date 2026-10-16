@@ -2,6 +2,9 @@
 
 | Feature | Status | Evidence / limitation |
 | --- | --- | --- |
+| Explicit project file context | VERIFIED_LOCAL_WITH_RESIDUE | Shared web/CLI /file and @file paths, local preview, all-member read grants, bounded64KiB/4files, and server-bound nonlocal-egress consent. Actual filesystem + fake-gateway tests pass; live configured team denial verified. Positive live use awaits explicit user grant; see docs/PROJECT_FILES.ar.md. |
+| Standalone chat workspace and project organization | VERIFIED_LOCAL | Saved-session sidebar/search, remembered last selection, independent paginated history, and persisted project metadata verified locally. No new file access grants; attachment/permission controls intentionally disabled. See docs/WORKSPACE_CHAT.ar.md. |
+| Named teams and session routing | VERIFIED_LOCAL | Durable ordered teams, version conflicts, session defaults, explicit /team routing, missing-team rejection without model calls. Six focused backend tests; browser CRUD/reorder/default persistence and RTL390 checks. Multi-member provider execution tested with a fake gateway, not a live paid chain. See docs/TEAMS.ar.md. |
 | .NET 9 bootstrap | VERIFIED_MOCK | `dotnet build DragonKMG.sln` completed with 0 warnings and 0 errors. |
 | SQLite persistence | VERIFIED_MOCK | API smoke created and read roles, skills, connections, agents, and assignments. |
 | Provider connections | VERIFIED_MOCK | Generic OpenAI-compatible endpoint has a mocked response-parser test; no live credential test. |

@@ -6,6 +6,7 @@ import { DashboardHeader } from "./components/dashboard/DashboardHeader";
 import { SessionsPanel } from "./components/dashboard/SessionsPanel";
 import { AgentsPanel } from "./components/dashboard/AgentsPanel";
 import { TeamPanel } from "./components/dashboard/TeamPanel";
+import { TeamsPanel } from "./components/dashboard/TeamsPanel";
 import { AgentTestPanel } from "./components/dashboard/AgentTestPanel";
 import { ConnectionsPanel } from "./components/dashboard/ConnectionsPanel";
 import { RolesPanel } from "./components/dashboard/RolesPanel";
@@ -23,7 +24,10 @@ import "./index.css";
 function Dashboard() {
   const d = useDashboard();
   const { t } = useI18n();
-  const [active, setActive] = useState<DashboardSection>(() => location.hash === "#sessions" ? "Sessions" : "Agents");
+  const [active, setActive] = useState<DashboardSection>(() => {
+    const sections: DashboardSection[] = ["Sessions", "Teams", "Agents", "Connections", "Skills", "Workflows", "Integrations", "Security", "Identity"];
+    return sections.find(section => `#${section.toLowerCase()}` === location.hash) ?? "Sessions";
+  });
   return (
     <div className={"app-shell" + (active === "Sessions" && !d.authRequired ? " sessions-mode" : "")}>
       <Sidebar active={active} onSelect={setActive} />
@@ -86,6 +90,7 @@ function Dashboard() {
               <AssignmentsPanel dashboard={d} />
             </div>
           )}
+          {active === "Teams" && <TeamsPanel dashboard={d} />}
           {active === "Workflows" && <CouncilPanel dashboard={d} />}
           {active === "Sessions" && <SessionsPanel dashboard={d} />}
           {active === "Integrations" && <IntegrationsPanel />}

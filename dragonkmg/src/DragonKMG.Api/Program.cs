@@ -13,12 +13,16 @@ var databasePath = Environment.GetEnvironmentVariable("DRAGONKMG_DB_PATH") ?? Pa
 builder.Services.AddSingleton<IPlatformStore>(_ => new SqlitePlatformStore(databasePath));
 var vaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DragonKMG", "vault");
 builder.Services.AddSingleton(new WindowsDpapiSecretVault(vaultPath));
+builder.Services.AddSingleton<IGitHubCredentialVault, GitHubCredentialVault>();
+builder.Services.AddSingleton<IGitHubIntegration>(services => new GitHubIntegration(new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) }, services.GetRequiredService<IGitHubCredentialVault>(), services.GetRequiredService<IPlatformStore>(), databasePath));
 builder.Services.AddSingleton<ISecretResolver, CompositeSecretResolver>();
 builder.Services.AddHttpClient<IModelGateway, OpenAiCompatibleGateway>(client => client.Timeout = TimeSpan.FromSeconds(90)).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddHttpClient<IProviderCatalog, OpenAiCompatibleGateway>(client => client.Timeout = TimeSpan.FromSeconds(20)).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddScoped<ProviderConnectionService>();
 builder.Services.AddScoped<PlatformService>();
 builder.Services.AddScoped<SessionConversationService>();
+builder.Services.AddSingleton<SessionExecutionTracker>();
+builder.Services.AddSingleton<IWorkspaceFileContextResolver, WorkspaceFileContextResolver>();
 var projectSkills = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "skills"));
 var skillsRoot = Environment.GetEnvironmentVariable("DRAGONKMG_SKILLS_ROOT") ?? (Directory.Exists(projectSkills) ? projectSkills : Path.Combine(AppContext.BaseDirectory, "skills"));
 builder.Services.AddSingleton<ISkillContentResolver>(new SkillFileResolver(skillsRoot));
@@ -60,6 +64,9 @@ app.Use(async (context, next) =>
 app.MapGet("/health", () => Results.Ok(new { status = "ok", hardware = HardwareProfiler.Probe() }));
 app.MapProviderConnectionRoutes();
 app.MapSessionConversationRoutes();
+app.MapTeamRoutes();
+app.MapProjectHistoryRoutes();
+app.MapGitHubRoutes();
 app.MapGet("/api/connections", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListConnectionsAsync(ct)));
 app.MapGet("/api/settings/default-connection", async (IPlatformStore store, CancellationToken ct) => Results.Ok(new DefaultConnectionRequest(await store.GetDefaultConnectionAsync(ct))));
 app.MapPut("/api/settings/default-connection", async (DefaultConnectionRequest value, IPlatformStore store, CancellationToken ct) =>

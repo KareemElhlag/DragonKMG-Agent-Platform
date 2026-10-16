@@ -1,0 +1,16 @@
+.github-connection { display: grid; gap: 10px; min-width: 0; font-size: .76rem; }
+.github-connection-heading, .github-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.github-connection-heading { justify-content: space-between; }
+.github-connection label { display: grid; gap: 6px; }
+.github-connection input { min-width: 0; width: 100%; box-sizing: border-box; }
+.github-connection form { display: grid; gap: 10px; }
+.github-connection p, .github-connection h4 { margin: 0; overflow-wrap: anywhere; }
+.github-hint, .github-repositories small { color: var(--muted); font-size: .68rem; line-height: 1.65; }
+.github-feedback.error { color: var(--danger); }
+.github-repositories { list-style: none; margin: 0; padding: 0; max-height: 230px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.github-repositories li { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-block-end: 1px solid var(--line); padding-block: 9px; }
+.github-repositories li > span { min-width: 0; overflow-wrap: anywhere; }
+.github-repositories small { display: block; }
+.github-connection a { color: var(--accent); }
+.github-connection :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media(max-width: 430px) { .github-repositories li { align-items: stretch; flex-direction: column; } }

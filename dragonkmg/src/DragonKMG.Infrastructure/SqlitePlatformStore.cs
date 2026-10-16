@@ -5,8 +5,24 @@ using Microsoft.Data.Sqlite;
 
 namespace DragonKMG.Infrastructure;
 
-public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
+public sealed partial class SqlitePlatformStore(string databasePath) : IPlatformStore
 {
+    public async Task<IReadOnlyList<TeamDefinition>> ListTeamsAsync(CancellationToken ct) => await ReadManyAsync("SELECT definition_json FROM teams ORDER BY name", reader => System.Text.Json.JsonSerializer.Deserialize<TeamDefinition>(reader.GetString(0)) ?? throw new InvalidOperationException("Invalid team definition."), ct);
+
+    public async Task SaveTeamAsync(TeamDefinition team, CancellationToken ct)
+    {
+        TeamPolicy.Validate(team);
+        try
+        {
+            var changed = await ExecuteCountAsync("INSERT INTO teams SELECT $id,$name,$json,$version WHERE $version=1 OR EXISTS(SELECT 1 FROM teams WHERE id=$id) ON CONFLICT(id) DO UPDATE SET name=excluded.name,definition_json=excluded.definition_json,version=excluded.version WHERE teams.version=excluded.version-1", [("$id", team.Id), ("$name", team.Name), ("$json", System.Text.Json.JsonSerializer.Serialize(team)), ("$version", team.Version)], ct);
+            if (changed != 1) throw new TeamConflictException();
+        }
+        catch (SqliteException exception) when (exception.SqliteErrorCode == 19) { throw new TeamConflictException(); }
+    }
+
+    public async Task<Guid?> GetSessionTeamAsync(Guid sessionId, CancellationToken ct) => (await ReadManyAsync("SELECT team_id FROM session_teams WHERE session_id=$id AND team_id IS NOT NULL", reader => Guid.Parse(reader.GetString(0)), ct, ("$id", sessionId))).Select(id => (Guid?)id).FirstOrDefault();
+
+    public async Task SetSessionTeamAsync(Guid sessionId, Guid? teamId, CancellationToken ct) => await ExecuteAsync("INSERT INTO session_teams VALUES($session,$team) ON CONFLICT(session_id) DO UPDATE SET team_id=excluded.team_id", [("$session", sessionId), ("$team", teamId)], ct);
     private readonly string _connectionString = new SqliteConnectionStringBuilder { DataSource = databasePath, ForeignKeys = true }.ToString();
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
@@ -26,8 +42,13 @@ public sealed class SqlitePlatformStore(string databasePath) : IPlatformStore
             CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES agents(id), agent_version INTEGER NOT NULL, input TEXT NOT NULL, effective_instructions TEXT NOT NULL, status INTEGER NOT NULL, output TEXT NULL, error_code TEXT NULL, started_at TEXT NOT NULL, finished_at TEXT NULL);
             CREATE TABLE IF NOT EXISTS audit_events (id TEXT PRIMARY KEY, occurred_at TEXT NOT NULL, actor TEXT NOT NULL, action TEXT NOT NULL, status_code INTEGER NOT NULL, outcome TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS terminal_sessions (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, selected_agent_id TEXT NULL, created_at TEXT NOT NULL, last_opened_at TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS workspace_projects (id TEXT PRIMARY KEY, name TEXT NOT NULL, root_path TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS session_projects (session_id TEXT PRIMARY KEY REFERENCES terminal_sessions(id), project_id TEXT NULL REFERENCES workspace_projects(id));
+            CREATE TABLE IF NOT EXISTS teams (id TEXT PRIMARY KEY, name TEXT NOT NULL COLLATE NOCASE UNIQUE, definition_json TEXT NOT NULL, version INTEGER NOT NULL);
+            CREATE TABLE IF NOT EXISTS session_teams (session_id TEXT PRIMARY KEY REFERENCES terminal_sessions(id), team_id TEXT NULL REFERENCES teams(id));
             CREATE TABLE IF NOT EXISTS session_request_leases (session_id TEXT PRIMARY KEY REFERENCES terminal_sessions(id), owner TEXT NOT NULL, expires_at INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS session_messages (id TEXT PRIMARY KEY, session_id TEXT NOT NULL REFERENCES terminal_sessions(id), role TEXT NOT NULL, content TEXT NOT NULL, agent_run_id TEXT NULL, created_at TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS session_history_order ON session_messages(session_id,created_at DESC,id DESC);
             CREATE TABLE IF NOT EXISTS approvals (id TEXT PRIMARY KEY, agent_run_id TEXT NULL, action TEXT NOT NULL, reason TEXT NOT NULL, status INTEGER NOT NULL, requested_at TEXT NOT NULL, expires_at TEXT NOT NULL, resolved_at TEXT NULL);
             CREATE TABLE IF NOT EXISTS workflows (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL, enabled INTEGER NOT NULL, version INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS workflow_stages (id TEXT PRIMARY KEY, workflow_id TEXT NOT NULL REFERENCES workflows(id), name TEXT NOT NULL, agent_id TEXT NOT NULL REFERENCES agents(id), position INTEGER NOT NULL, checklist_json TEXT NOT NULL, expected_evidence TEXT NOT NULL, requires_approval INTEGER NOT NULL, UNIQUE(workflow_id, position));

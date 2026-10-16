@@ -4,6 +4,15 @@ namespace DragonKMG.Application;
 
 public interface IPlatformStore
 {
+    Task<IReadOnlyList<WorkspaceProject>> ListProjectsAsync(CancellationToken cancellationToken);
+    Task SaveProjectAsync(WorkspaceProject project, CancellationToken cancellationToken);
+    Task<Guid?> GetSessionProjectAsync(Guid sessionId, CancellationToken cancellationToken);
+    Task SetSessionProjectAsync(Guid sessionId, Guid? projectId, CancellationToken cancellationToken);
+    Task<SessionHistoryPage> GetSessionHistoryAsync(Guid sessionId, string? before, int limit, CancellationToken cancellationToken);
+    Task<IReadOnlyList<TeamDefinition>> ListTeamsAsync(CancellationToken cancellationToken);
+    Task SaveTeamAsync(TeamDefinition team, CancellationToken cancellationToken);
+    Task<Guid?> GetSessionTeamAsync(Guid sessionId, CancellationToken cancellationToken);
+    Task SetSessionTeamAsync(Guid sessionId, Guid? teamId, CancellationToken cancellationToken);
     Task InitializeAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<ProviderConnection>> ListConnectionsAsync(CancellationToken cancellationToken);
     Task<ProviderConnection?> FindConnectionAsync(Guid id, CancellationToken cancellationToken);
@@ -55,6 +64,17 @@ public interface ISecretResolver
 public interface ISkillContentResolver
 {
     Task<string> ResolveAsync(SkillDefinition skill, CancellationToken cancellationToken);
+}
+
+public sealed record WorkspaceFileContext(string RelativePath, string Content, int Bytes, string Sha256);
+public interface IWorkspaceFileContextResolver
+{
+    Task<WorkspaceFileContext> ReadAsync(string projectRoot, string path, CancellationToken cancellationToken);
+}
+public sealed class FileContextException(string code, int statusCode) : Exception(code)
+{
+    public string Code { get; } = code;
+    public int StatusCode { get; } = statusCode;
 }
 
 public sealed record ModelRequest(Uri Endpoint, string ApiKey, string ModelId, string Instructions, string Input, CancellationToken CancellationToken, ConnectionKind Kind = ConnectionKind.OpenAiCompatible, int? MaxOutputTokens = null);

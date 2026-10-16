@@ -25,6 +25,8 @@ The API listens on `http://127.0.0.1:5188` by default. It only exposes the healt
 
 ## Terminal control plane
 
+For the standalone web chat and saved-session/history recovery, see [Workspace chat — Arabic](docs/WORKSPACE_CHAT.ar.md). Explicit project file reads, `/file` directives, CLI project selection, and per-request file-egress consent are documented in [Project files — Arabic](docs/PROJECT_FILES.ar.md). No tool grants are added automatically; permission controls remain separate.
+
 Run `dotnet run --project src/DragonKMG.Cli -- tui` for the cross-platform interactive terminal UI. It uses standard console input/output, so it works in Windows Terminal, macOS/Linux terminals, SSH sessions, and mobile terminals that can run .NET.
 
 For a Claude-style entry point, run the installed `dragonkmg` command with no arguments. It opens the persisted `default` session. Use `dragonkmg session open <name>` to enter or create a named session, and `dragonkmg session list` to see saved sessions. The selected agent is restored when that session opens again.
@@ -44,7 +46,7 @@ The status header always shows the selected agent, its mode, bound model and con
 | `report` | Export a Markdown session report with selected agent/model and conversation. |
 | `help`, `clear`, `exit` | Terminal help and session controls. |
 
-`open` requires `DRAGONKMG_WORKSPACE_ROOT` and keeps the same workspace-file safety restrictions as the API.
+CLI `/open` and `/file` use the selected session project and explicit team file-read grants. Use `/project cwd` or select a saved project; see the project-files guide above. The legacy direct workspace-file API still uses `DRAGONKMG_WORKSPACE_ROOT`.
 
 Prompts and returned agent outputs are persisted as session messages. Reports are written under the local DragonKMG reports directory and do not include secrets.
 
@@ -60,6 +62,8 @@ npm run dev
 Enter the local management token in the dashboard access form and save. It is separate from provider API keys and remains only for that browser tab session. See [Authentication recovery](docs/AUTH_RECOVERY.md). Set `VITE_DRAGONKMG_API_URL` before starting Vite if the API address differs.
 
 ## Default multi-agent council
+
+Named teams with ordered members, per-session defaults, and explicit prompt routing are documented in [Teams and session routing — Arabic](docs/TEAMS.ar.md). A chat request without an explicit or session-default team is rejected without calling a model.
 
 See [Multi-Agent Swarm Governance — Arabic](docs/MULTI_AGENT_GOVERNANCE.ar.md) for custom teams, workflow operation, implemented security boundaries, and planned capabilities. The three-agent council is a starter template, not a three-agent limit. Custom workflows execute sequentially; automatic task routing, parallel file ownership, and enforced five-role certification are not implemented.
 

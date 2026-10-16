@@ -1,3 +1,4 @@
+export type TeamDefinition = { id: string; name: string; description: string; enabled: boolean; agentIds: string[]; version: number };
 export type Role = {
   id: string;
   name: string;

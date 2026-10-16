@@ -1,5 +1,7 @@
 # Conversation latency profiles — 2026-10-15
 
+Named-team update: session chat now requires an explicit team or a saved session default. Missing routing asks for a team without calling a model. Teams run only their ordered members, sequentially; unrelated teams are not started. Local greetings and explicit quick mode apply only to single-member teams. Quick mode cannot silently omit reviewers from a multi-member team. See [Teams](TEAMS.ar.md). Measurements below predate this routing addition and are historical, not current team-latency benchmarks.
+
 ## Observed baseline
 
 Existing Security Test Agent/openrouter/free run: input12characters, effectiveInstructions42,783characters, run duration11.1386seconds. This run timing includes provider completion and run writes, not separately measured network/queue/inference phases.

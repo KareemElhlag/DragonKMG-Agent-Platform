@@ -295,7 +295,7 @@ export function useDashboard() {
       ].map((toolId) => ({
         agentId: selectedAgentId,
         toolId,
-        requiresApproval: true,
+        requiresApproval: toolId !== "workspace.file.read",
         version: 1,
       }));
       await request(`/api/agents/${selectedAgentId}/tools`, {

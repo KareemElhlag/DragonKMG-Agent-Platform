@@ -4,7 +4,7 @@ import { Icon } from "../ui/Icon";
 import { DragonLogo } from "../ui/DragonLogo";
 
 const groups = [
-  { label: "Workspace", items: [{ key: "Sessions", icon: "chat" }, { key: "Workflows", icon: "workflow" }] },
+  { label: "Workspace", items: [{ key: "Sessions", icon: "chat" }, { key: "Teams", icon: "agents" }, { key: "Workflows", icon: "workflow" }] },
   { label: "Configuration", items: [{ key: "Agents", icon: "agents" }, { key: "Skills", icon: "skills" }, { key: "Connections", icon: "connections" }, { key: "Integrations", icon: "integrations" }] },
   { label: "Administration", items: [{ key: "Identity", icon: "user" }, { key: "Security", icon: "shield" }] },
 ] as const;

@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\DragonKMG.Api\DragonKMG.Api.csproj" />
     <ProjectReference Include="..\..\src\DragonKMG.Cli\DragonKMG.Cli.csproj" />
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

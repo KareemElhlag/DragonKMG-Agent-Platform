@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DragonKMG.Application\DragonKMG.Application.csproj" />
+    <ProjectReference Include="..\DragonKMG.ToolGateway\DragonKMG.ToolGateway.csproj" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.12" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="9.0.0" />
   </ItemGroup>

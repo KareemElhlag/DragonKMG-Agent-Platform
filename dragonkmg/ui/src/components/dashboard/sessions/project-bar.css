@@ -1,0 +1,48 @@
+.chat-project-bar { flex-shrink: 0; padding: 9px 24px; border-bottom: 1px solid var(--line); background: var(--surface); min-width: 0; max-height: 42%; overflow-y: auto; }
+.chat-compose-area .chat-project-bar { padding: 8px 0 10px; margin-bottom: 6px; background: transparent; border-bottom: 0; max-height: 30dvh; scrollbar-width: thin; }
+.chat-compose-area .chat-project-bar { overflow: visible; anchor-name: --chat-project-context; padding-block: 0 8px; margin: 0; }
+.chat-project-bar .chat-context-trigger { display: inline-flex; align-items: center; gap: 8px; max-width: min(260px, 65vw); min-height: 32px; padding: 5px 9px; background: transparent; color: var(--muted); border: 1px solid transparent; border-radius: 8px; }
+.chat-project-bar .chat-context-trigger:hover { background: var(--raised); color: var(--text); border-color: var(--line); }
+.chat-context-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-context-popover { position: fixed; position-anchor: --chat-project-context; inset: auto; right: max(12px, anchor(right)); bottom: anchor(top); margin: 0 0 8px; width: min(420px, calc(100vw - 24px)); max-height: min(60dvh, 480px); overflow: auto; overscroll-behavior: contain; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); scrollbar-width: thin; }
+.chat-context-popover::backdrop { background: transparent; }
+@supports not (bottom: anchor(top)) {
+  .chat-context-popover { inset: 12px; margin: auto; height: fit-content; }
+}
+.chat-context-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; font-size: .8rem; }
+.chat-project-bar .chat-context-heading button { background: transparent; color: var(--muted); border: 0; font-size: 1.1rem; min-width: 32px; min-height: 32px; }
+.chat-context-popover .chat-project-picker { max-width: none; margin-bottom: 10px; }
+.chat-context-popover .chat-project-breadcrumb { margin-bottom: 10px; }
+.chat-context-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chat-plugin-plan { font-size: .72rem; color: var(--muted); }
+.chat-plugin-plan > summary { cursor: pointer; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.chat-plugin-plan > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chat-plugin-roadmap { padding: 10px; border-inline-start: 2px solid var(--line); line-height: 1.7; max-width: 320px; }
+.chat-plugin-roadmap ol { margin-block: 6px; padding-inline-start: 22px; }
+.chat-plugin-roadmap p { margin: 0; }
+.chat-project-bar-row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; min-width: 0; }
+.chat-project-picker { display: flex; align-items: center; gap: 9px; margin: 0; font-size: .73rem; min-width: 0; flex: 1 1 210px; max-width: 360px; }
+.chat-project-picker > span { flex-shrink: 0; color: var(--muted); }
+.chat-folder-glyph { width: 17px; height: 17px; flex-shrink: 0; color: var(--accent); }
+.chat-project-picker select { margin: 0; padding: 7px 10px; min-width: 0; font-size: .76rem; }
+.chat-project-bar button { font-size: .72rem; padding: 7px 10px; }
+.chat-project-breadcrumb { min-width: 0; font-size: .68rem; color: var(--muted); max-width: 100%; }
+.chat-project-breadcrumb summary { cursor: pointer; }
+.chat-project-breadcrumb code { display: block; white-space: normal; overflow-wrap: anywhere; padding: 7px 0; }
+.chat-project-progress, .chat-project-feedback { font-size: .72rem; color: var(--muted); }
+.chat-project-feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 8px; margin: 0; }
+.chat-project-feedback.error { color: var(--danger); }
+.chat-create-project { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 14px; padding: 14px 0 4px; }
+.chat-create-project label { flex: 1 1 160px; min-width: 0; margin: 0; font-size: .73rem; }
+.chat-create-project .chat-create-project-path { flex: 2 1 240px; }
+.chat-create-project input { margin-top: 5px; padding: 8px 10px; font-size: .78rem; }
+.chat-project-form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.chat-create-project p { flex-basis: 100%; margin: 2px 0; color: var(--muted); font-size: .68rem; line-height: 1.7; }
+.chat-session-settings .chat-settings-content { grid-template-columns: minmax(0,1fr); }
+@media(max-width:700px) {
+  .chat-project-bar { padding: 8px 12px; }
+  .chat-project-bar-row { gap: 7px; }
+  .chat-project-picker { flex-basis: 180px; }
+  .chat-project-breadcrumb { order: 3; flex-basis: 100%; }
+  .chat-create-project { gap: 10px; }
+}

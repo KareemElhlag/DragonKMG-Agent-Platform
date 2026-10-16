@@ -1,0 +1,5 @@
+.chat-execution { margin: 0 0 8px; color: var(--muted); font-size: .72rem; }
+.chat-execution > summary { cursor: pointer; padding: 6px 4px; }
+.chat-execution ol { max-height: 100px; overflow: auto; scrollbar-width: thin; padding-inline-start: 24px; line-height: 1.8; margin: 4px 0; }
+.chat-execution p { margin: 4px; font-size: .65rem; }
+.chat-execution code { overflow-wrap: anywhere; }

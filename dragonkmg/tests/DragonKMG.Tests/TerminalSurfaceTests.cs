@@ -5,6 +5,20 @@ namespace DragonKMG.Tests;
 public sealed class TerminalSurfaceTests
 {
     [Fact]
+    public void ProcessUpdatesDoNotDragTerminalHistoryToLatest()
+    {
+        using var surface = new TerminalSurface();
+        surface.Add("assistant", string.Join("\n", Enumerable.Range(0, 60).Select(index => "history-row-" + index)));
+        surface.RenderFrame(80, 24);
+        surface.ScrollHistory(25);
+        var before = surface.RenderFrame(80, 24);
+        surface.Add("process", "new execution stage");
+        var after = surface.RenderFrame(80, 24);
+        Assert.Equal(before, after);
+        surface.ScrollHistory(-1000);
+        Assert.Contains("new execution stage", surface.RenderFrame(80, 24));
+    }
+    [Fact]
     public void WrappingKeepsMixedModelIdentifierWholeWhenItFitsOneLine()
     {
         const string text = "مرحبا بالعالم model-id 123 نص عربي";

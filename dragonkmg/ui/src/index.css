@@ -802,3 +802,11 @@ pre {
 .sessions-mode .session-chat-create { padding: 0 12px 8px; font-size: .8rem; }
 .sessions-mode .session-chat-composer { padding: 10px 12px; }
 .sessions-mode .session-chat-composer textarea { height: 74px; min-height: 64px; max-height: 140px; }
+.session-chat > p[role="status"], .session-chat > small { margin: 0; padding: 4px 12px; color: var(--muted); font-size: .75rem; flex-shrink: 0; overflow-wrap: anywhere; }
+.sessions-mode .session-chat-toolbar { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.sessions-mode .session-chat-toolbar button { min-width: 0; white-space: normal; }
+@media(max-width:480px) {
+  .sessions-mode .session-chat-toolbar { gap: 6px; }
+  .sessions-mode .session-chat-header p, .session-chat > small { display: none; }
+  .sessions-mode .session-chat-toolbar button { padding: 6px; font-size: .7rem; }
+}
