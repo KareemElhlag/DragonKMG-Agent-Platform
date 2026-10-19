@@ -5,10 +5,18 @@ using DragonKMG.Infrastructure;
 using DragonKMG.LocalRuntime;
 using DragonKMG.ModelGateway;
 using DragonKMG.ToolGateway;
+using DragonKMG.Api.Authentication;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.Data.Sqlite;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddDragonKmgOidcAuthentication(builder.Configuration, builder.Environment);
+var databaseProvider = Environment.GetEnvironmentVariable("DRAGONKMG_DB_PROVIDER") ?? builder.Configuration["DragonKMG:Database:Provider"] ?? "sqlite";
+if (!string.Equals(databaseProvider, "sqlite", StringComparison.OrdinalIgnoreCase))
+    throw new InvalidOperationException("The configured database provider is not available in this build. PostgreSQL adapter is not implemented; refusing to silently use SQLite.");
 var databasePath = Environment.GetEnvironmentVariable("DRAGONKMG_DB_PATH") ?? Path.Combine(AppContext.BaseDirectory, "dragonkmg.db");
 builder.Services.AddSingleton<IPlatformStore>(_ => new SqlitePlatformStore(databasePath));
 var vaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DragonKMG", "vault");
@@ -26,6 +34,13 @@ builder.Services.AddSingleton<IWorkspaceFileContextResolver, WorkspaceFileContex
 var projectSkills = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "skills"));
 var skillsRoot = Environment.GetEnvironmentVariable("DRAGONKMG_SKILLS_ROOT") ?? (Directory.Exists(projectSkills) ? projectSkills : Path.Combine(AppContext.BaseDirectory, "skills"));
 builder.Services.AddSingleton<ISkillContentResolver>(new SkillFileResolver(skillsRoot));
+var mcpRegistryPath = Environment.GetEnvironmentVariable("DRAGONKMG_MCP_REGISTRY") ?? builder.Configuration["DragonKMG:Mcp:RegistryPath"];
+var mcpRegistry = LoadMcpRegistry(mcpRegistryPath);
+builder.Services.AddSingleton(mcpRegistry);
+builder.Services.AddSingleton<McpStreamableHttpClient>(_ => new McpStreamableHttpClient(mcpRegistry));
+var backupDirectory = Environment.GetEnvironmentVariable("DRAGONKMG_BACKUP_DIRECTORY") ?? builder.Configuration["DragonKMG:Backups:Directory"] ?? Path.Combine(AppContext.BaseDirectory, "backups");
+var backupRunner = new SqliteBackupRunner(databasePath, backupDirectory);
+builder.Services.AddSingleton(backupRunner);
 builder.WebHost.UseUrls(Environment.GetEnvironmentVariable("DRAGONKMG_URL") ?? "http://127.0.0.1:5188");
 var app = builder.Build();
 await app.Services.GetRequiredService<IPlatformStore>().InitializeAsync(default);
@@ -39,9 +54,24 @@ app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
 app.Use(async (context, next) =>
 {
     if (!context.Request.Path.StartsWithSegments("/api")) { await next(context); return; }
-    if (string.IsNullOrWhiteSpace(localApiToken)) { context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable; await context.Response.WriteAsJsonAsync(new { title = "Set DRAGONKMG_LOCAL_API_TOKEN before using the management API." }); return; }
-    var supplied = context.Request.Headers["X-DragonKMG-Local-Token"].ToString();
-    if (!TokensMatch(localApiToken, supplied)) { context.Response.StatusCode = StatusCodes.Status401Unauthorized; await context.Response.WriteAsJsonAsync(new { title = "Local API authentication failed." }); return; }
+    if (builder.Configuration.GetValue<bool>("Authentication:Oidc:Enabled"))
+    {
+        var result = await context.AuthenticateAsync(DragonKmgOidcOptions.SchemeName);
+        if (!result.Succeeded) { context.Response.StatusCode = StatusCodes.Status401Unauthorized; await context.Response.WriteAsJsonAsync(new { title = "A valid OIDC bearer token is required." }); return; }
+        var requiredScope = builder.Configuration["Authentication:Oidc:RequiredScope"];
+        if (!string.IsNullOrWhiteSpace(requiredScope) && !result.Principal!.Claims
+            .Where(claim => claim.Type is "scope" or "scp")
+            .SelectMany(claim => claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Contains(requiredScope, StringComparer.Ordinal))
+        { context.Response.StatusCode = StatusCodes.Status403Forbidden; await context.Response.WriteAsJsonAsync(new { title = "The OIDC token is missing the required API scope." }); return; }
+        context.User = result.Principal!;
+    }
+    else if (!builder.Environment.IsProduction() && !string.IsNullOrWhiteSpace(localApiToken))
+    {
+        var supplied = context.Request.Headers["X-DragonKMG-Local-Token"].ToString();
+        if (!TokensMatch(localApiToken, supplied)) { context.Response.StatusCode = StatusCodes.Status401Unauthorized; await context.Response.WriteAsJsonAsync(new { title = "Local API authentication failed." }); return; }
+    }
+    else { context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable; await context.Response.WriteAsJsonAsync(new { title = "Configure local API token or enable OIDC authentication." }); return; }
     await next(context);
 });
 app.Use(async (context, next) =>
@@ -53,7 +83,9 @@ app.Use(async (context, next) =>
         try
         {
             var token = context.Request.Headers["X-DragonKMG-Local-Token"].ToString();
-            var actor = $"local-token:{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)))[..12].ToLowerInvariant()}";
+            var actor = context.User.Identity?.IsAuthenticated == true
+                ? $"oidc:{context.User.FindFirst("sub")?.Value ?? "unknown"}"
+                : $"local-token:{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)))[..12].ToLowerInvariant()}";
             var outcome = context.Response.StatusCode is >= 200 and < 400 ? "succeeded" : "failed";
             await context.RequestServices.GetRequiredService<IPlatformStore>().SaveAuditEventAsync(new AuditEvent(Guid.NewGuid(), DateTimeOffset.UtcNow, actor, $"{context.Request.Method} {context.Request.Path}", context.Response.StatusCode, outcome), CancellationToken.None);
         }
@@ -62,6 +94,51 @@ app.Use(async (context, next) =>
 });
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok", hardware = HardwareProfiler.Probe() }));
+app.MapGet("/api/operations/readiness", (IHostEnvironment environment) => Results.Ok(new
+{
+    environment = environment.EnvironmentName,
+    persistence = "sqlite",
+    postgresAdapter = "not-implemented",
+    authentication = builder.Configuration.GetValue<bool>("Authentication:Oidc:Enabled") ? "oidc" : "local-token",
+    oidcConfigured = builder.Configuration.GetValue<bool>("Authentication:Oidc:Enabled"),
+    mcpServerCount = mcpRegistry.ServerCount,
+    backupDirectoryConfigured = !string.IsNullOrWhiteSpace(backupDirectory)
+}));
+app.MapGet("/api/operations/backups", async (CancellationToken ct) => Results.Ok(await backupRunner.ListAsync(ct)));
+app.MapPost("/api/operations/backups", async (CancellationToken ct) =>
+{
+    try { return Results.Ok(await backupRunner.CreateAsync(ct)); }
+    catch (Exception ex) when (ex is IOException or SqliteException or UnauthorizedAccessException)
+    { return Results.Problem("Backup could not be created. Check that the backup directory is writable and the database is available.", statusCode: StatusCodes.Status503ServiceUnavailable); }
+});
+app.MapPost("/api/mcp/{serverId}/discover", async (string serverId, McpStreamableHttpClient client, CancellationToken ct) =>
+{
+    try { return Results.Ok(await client.ListToolsAsync(serverId, ct)); }
+    catch (McpHttpException ex) { return Results.Problem(ex.Message, statusCode: StatusCodes.Status502BadGateway, extensions: new Dictionary<string, object?> { ["code"] = ex.Code }); }
+    catch (UnauthorizedAccessException) { return Results.Json(new { title = "The MCP server is not trusted or explicitly granted." }, statusCode: StatusCodes.Status403Forbidden); }
+    catch (KeyNotFoundException) { return Results.NotFound(); }
+});
+app.MapPost("/api/mcp/{serverId}/tools/{toolName}/call", async (string serverId, string toolName, McpToolCallRequest request, McpStreamableHttpClient client, IPlatformStore store, HttpContext context, CancellationToken ct) =>
+{
+    if (!Guid.TryParse(request.AgentId, out var agentId) || request.Arguments.ValueKind != System.Text.Json.JsonValueKind.Object)
+        return Results.BadRequest("A valid agent id and JSON object arguments are required.");
+    if (builder.Configuration.GetValue<bool>("Authentication:Oidc:Enabled"))
+    {
+        var executionScope = builder.Configuration["DragonKMG:Mcp:ExecuteScope"];
+        if (string.IsNullOrWhiteSpace(executionScope) || !context.User.Claims
+            .Where(claim => claim.Type is "scope" or "scp")
+            .SelectMany(claim => claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            .Contains(executionScope, StringComparer.Ordinal))
+            return Results.Json(new { title = "The OIDC token is missing the MCP execution scope." }, statusCode: StatusCodes.Status403Forbidden);
+    }
+    var agent = (await store.ListAgentsAsync(ct)).FirstOrDefault(value => value.Id == agentId);
+    if (agent is null || !agent.Enabled) return Results.Json(new { title = "The requested agent is not available." }, statusCode: StatusCodes.Status403Forbidden);
+    try { return Results.Ok(await client.CallToolAsync(agentId.ToString(), serverId, toolName, request.Arguments, ct)); }
+    catch (McpHttpException ex) { return Results.Problem(ex.Message, statusCode: StatusCodes.Status502BadGateway, extensions: new Dictionary<string, object?> { ["code"] = ex.Code }); }
+    catch (UnauthorizedAccessException) { return Results.Json(new { title = "The MCP tool is not explicitly granted to this agent." }, statusCode: StatusCodes.Status403Forbidden); }
+    catch (ArgumentException) { return Results.BadRequest("MCP tool name or arguments are invalid."); }
+    catch (KeyNotFoundException) { return Results.NotFound(); }
+});
 app.MapProviderConnectionRoutes();
 app.MapSessionConversationRoutes();
 app.MapInteractiveQuestionRoutes();
@@ -154,8 +231,75 @@ static bool TokensMatch(string expected, string supplied)
     return expectedBytes.Length == suppliedBytes.Length && CryptographicOperations.FixedTimeEquals(expectedBytes, suppliedBytes);
 }
 
+static McpStaticRegistry LoadMcpRegistry(string? configuredPath)
+{
+    if (string.IsNullOrWhiteSpace(configuredPath) || !File.Exists(configuredPath)) return new McpStaticRegistry([], []);
+    var fullPath = Path.GetFullPath(configuredPath);
+    var json = File.ReadAllText(fullPath);
+    var configuration = JsonSerializer.Deserialize<McpRegistryConfiguration>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+        ?? throw new InvalidOperationException("MCP registry configuration is invalid.");
+    var servers = configuration.Servers.Select(item => new McpHttpServer(item.Id, new Uri(item.Endpoint, UriKind.Absolute), item.Enabled));
+    var grants = configuration.Grants.Select(item => new McpToolGrant(item.AgentId, item.ServerId, item.ToolName));
+    return new McpStaticRegistry(servers, grants);
+}
+
 app.Run();
 
 public sealed record RunRequest(string Input);
 public sealed record DefaultConnectionRequest(Guid? ConnectionId);
 public sealed record WorkflowDetail(WorkflowDefinition Workflow, IReadOnlyList<WorkflowStage> Stages, IReadOnlyList<WorkflowEdge> Edges);
+public sealed record McpRegistryConfiguration(McpServerConfiguration[] Servers, McpGrantConfiguration[] Grants);
+public sealed record McpServerConfiguration(string Id, string Endpoint, bool Enabled = true);
+public sealed record McpGrantConfiguration(string AgentId, string ServerId, string ToolName);
+public sealed record McpToolCallRequest(string AgentId, System.Text.Json.JsonElement Arguments);
+
+public sealed class SqliteBackupRunner(string databasePath, string backupDirectory)
+{
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly string _databasePath = Path.GetFullPath(databasePath);
+    private readonly string _backupDirectory = Path.GetFullPath(backupDirectory);
+
+    public async Task<BackupArtifact> CreateAsync(CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            Directory.CreateDirectory(_backupDirectory);
+            var name = $"dragonkmg-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}.db";
+            var target = Path.Combine(_backupDirectory, name);
+            var temporary = target + ".tmp";
+            var sourceBuilder = new SqliteConnectionStringBuilder { DataSource = _databasePath, Mode = SqliteOpenMode.ReadWrite, Pooling = false };
+            var backupBuilder = new SqliteConnectionStringBuilder { DataSource = temporary, Mode = SqliteOpenMode.ReadWriteCreate, Pooling = false };
+            try
+            {
+                await using var source = new SqliteConnection(sourceBuilder.ToString());
+                await using var destination = new SqliteConnection(backupBuilder.ToString());
+                await source.OpenAsync(ct);
+                await destination.OpenAsync(ct);
+                source.BackupDatabase(destination);
+                await using var check = destination.CreateCommand();
+                check.CommandText = "PRAGMA integrity_check;";
+                var result = Convert.ToString(await check.ExecuteScalarAsync(ct));
+                if (!string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase)) throw new IOException("SQLite backup integrity check failed.");
+            }
+            catch { if (File.Exists(temporary)) File.Delete(temporary); throw; }
+            File.Move(temporary, target);
+            var info = new FileInfo(target);
+            return new BackupArtifact(name, info.Length, info.CreationTimeUtc);
+        }
+        finally { _gate.Release(); }
+    }
+
+    public Task<IReadOnlyList<BackupArtifact>> ListAsync(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        if (!Directory.Exists(_backupDirectory)) return Task.FromResult<IReadOnlyList<BackupArtifact>>([]);
+        IReadOnlyList<BackupArtifact> result = Directory.EnumerateFiles(_backupDirectory, "dragonkmg-*.db", SearchOption.TopDirectoryOnly)
+            .Select(path => new FileInfo(path)).Where(info => !info.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            .OrderByDescending(info => info.CreationTimeUtc).Take(100)
+            .Select(info => new BackupArtifact(info.Name, info.Length, info.CreationTimeUtc)).ToArray();
+        return Task.FromResult(result);
+    }
+}
+
+public sealed record BackupArtifact(string FileName, long SizeBytes, DateTime CreatedUtc);

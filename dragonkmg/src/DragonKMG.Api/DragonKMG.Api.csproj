@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.21" />
     <ProjectReference Include="..\DragonKMG.Application\DragonKMG.Application.csproj" />
     <ProjectReference Include="..\DragonKMG.Infrastructure\DragonKMG.Infrastructure.csproj" />
     <ProjectReference Include="..\DragonKMG.ModelGateway\DragonKMG.ModelGateway.csproj" />

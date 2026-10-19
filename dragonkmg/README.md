@@ -14,14 +14,16 @@ On API startup, unfinished runs left in `Running` state by a process interruptio
 
 ## Safe local startup
 
-The management API is intentionally unavailable until a local token is configured. In PowerShell, set a new value for the current terminal session, then run the API:
+For a manual production/staging preparation checklist, see [Production setup — Arabic](docs/PRODUCTION_SETUP.ar.md). The checked-in example contains placeholders only; secrets and provider credentials must be supplied locally.
+
+For a local manual trial, set a new token for the current terminal session, then run the API:
 
 ```powershell
 $env:DRAGONKMG_LOCAL_API_TOKEN = "create-a-long-random-local-token"
 dotnet run --project src/DragonKMG.Api
 ```
 
-The API listens on `http://127.0.0.1:5188` by default. It only exposes the health endpoint without authentication. Every `/api/*` request requires the same value in `X-DragonKMG-Local-Token`.
+The API listens on `http://127.0.0.1:5188` by default. Every `/api/*` request requires the same value in `X-DragonKMG-Local-Token` during local development. OIDC bearer authentication, the bounded MCP HTTP client, backup creation/listing, and readiness reporting are available; see the setup guide for configuration and limitations. PostgreSQL and backup restoration are not implemented, so this is not a general production release.
 
 ## Terminal control plane
 
