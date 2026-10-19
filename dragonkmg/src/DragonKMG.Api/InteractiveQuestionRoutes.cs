@@ -26,6 +26,13 @@ public static class InteractiveQuestionRoutes
                 await store.SaveInteractiveQuestionAsync(skipped, ct);
                 return Results.Ok(skipped);
             }
+            if (string.Equals(request.Decision, "manual", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.IsNullOrWhiteSpace(request.Answer) || request.Answer.Length > 2000) return Results.BadRequest(new { code = "ManualAnswerInvalid" });
+                var manual = question with { Status = InteractiveQuestionStatus.Answered, Answer = request.Answer.Trim(), AnsweredAt = DateTimeOffset.UtcNow };
+                await store.SaveInteractiveQuestionAsync(manual, ct);
+                return Results.Ok(manual);
+            }
             if (!string.Equals(request.Decision, "answer", StringComparison.OrdinalIgnoreCase)) return Results.BadRequest(new { code = "DecisionRequired" });
             using var options = JsonDocument.Parse(question.OptionsJson);
             if (!options.RootElement.EnumerateArray().Any(item => string.Equals(item.GetString(), request.Answer, StringComparison.Ordinal))) return Results.BadRequest(new { code = "AnswerNotAllowed" });

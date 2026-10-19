@@ -263,7 +263,7 @@
 ,
   "Edit": "Editar",
   "Description": "Descripción",
-  "Cancel": "Cancelar", "Skip": "Omitir",
+  "Cancel": "Cancelar", "Skip": "Omitir", "AI recommendation": "Recomendación de IA", "Enter a manual answer": "Introduzca una respuesta manual", "Submit manual answer": "Enviar respuesta manual",
   "Team changed elsewhere. Reload teams before saving again.": "El equipo cambió. Recarga antes de guardar."
 ,
   "Clear session default": "Borrar predeterminado"

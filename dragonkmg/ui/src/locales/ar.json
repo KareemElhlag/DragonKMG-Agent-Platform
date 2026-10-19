@@ -263,7 +263,7 @@
 ,
   "Edit": "تعديل",
   "Description": "الوصف",
-  "Cancel": "إلغاء", "Skip": "تخطي",
+  "Cancel": "إلغاء", "Skip": "تخطي", "AI recommendation": "توصية الذكاء الاصطناعي", "Enter a manual answer": "أدخل إجابة يدوية", "Submit manual answer": "إرسال الإجابة اليدوية",
   "Team changed elsewhere. Reload teams before saving again.": "تم تعديل الفريق من مكان آخر. أعد تحميل الفرق قبل الحفظ."
 ,
   "Clear session default": "إزالة افتراضي الجلسة"

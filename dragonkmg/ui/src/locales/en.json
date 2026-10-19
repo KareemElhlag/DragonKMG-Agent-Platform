@@ -263,7 +263,7 @@
 ,
   "Edit": "Edit",
   "Description": "Description",
-  "Cancel": "Cancel", "Skip": "Skip",
+  "Cancel": "Cancel", "Skip": "Skip", "AI recommendation": "AI recommendation", "Enter a manual answer": "Enter a manual answer", "Submit manual answer": "Submit manual answer",
   "Team changed elsewhere. Reload teams before saving again.": "Team changed elsewhere. Reload teams before saving again."
 ,
   "Clear session default": "Clear session default"

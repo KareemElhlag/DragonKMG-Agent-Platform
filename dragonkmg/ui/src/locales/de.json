@@ -263,7 +263,7 @@
 ,
   "Edit": "Bearbeiten",
   "Description": "Beschreibung",
-  "Cancel": "Abbrechen", "Skip": "Überspringen",
+  "Cancel": "Abbrechen", "Skip": "Überspringen", "AI recommendation": "KI-Empfehlung", "Enter a manual answer": "Manuelle Antwort eingeben", "Submit manual answer": "Manuelle Antwort senden",
   "Team changed elsewhere. Reload teams before saving again.": "Das Team wurde geändert. Vor dem Speichern neu laden."
 ,
   "Clear session default": "Sitzungsstandard entfernen"
