@@ -6,3 +6,6 @@
 *.db-shm
 *.db-wal
 security-temp/
+temp/
+project.config.json
+field-lessons.md

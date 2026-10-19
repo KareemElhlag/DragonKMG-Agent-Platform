@@ -16,7 +16,11 @@ On API startup, unfinished runs left in `Running` state by a process interruptio
 
 For a manual production/staging preparation checklist, see [Production setup — Arabic](docs/PRODUCTION_SETUP.ar.md). The checked-in example contains placeholders only; secrets and provider credentials must be supplied locally.
 
-For a local manual trial, set a new token for the current terminal session, then run the API:
+To download the repository and start the API and dashboard together, follow [Local quick start — Arabic](docs/LOCAL_QUICKSTART.ar.md). On Windows run `scripts\start-local.ps1`; on macOS/Linux run `bash scripts/start-local.sh`. The launcher checks prerequisites, uses a shared database for the API and CLI, creates a temporary local access token, waits for API health, and opens the dashboard. Add `-WithCli` on Windows or `--with-cli` on macOS/Linux to open the terminal UI too. Use the check-only option to validate the setup without starting services.
+
+The launcher is for a local single-user trial. It does not merge or delete existing SQLite files and will refuse to take ports already in use. Preserve and back up existing data before manually changing `DRAGONKMG_DB_PATH`.
+
+For an advanced manual API-only trial, set a token for the current terminal session, then run the API:
 
 ```powershell
 $env:DRAGONKMG_LOCAL_API_TOKEN = "create-a-long-random-local-token"
@@ -54,7 +58,7 @@ Prompts and returned agent outputs are persisted as session messages. Reports ar
 
 The Dashboard **Sessions** panel uses the same SQLite sessions and messages as the terminal. Open a session in the terminal, then select it in the dashboard to inspect its persisted chat history.
 
-Start the dashboard in a second terminal:
+For manual dashboard startup, use a second terminal and pass the same `DRAGONKMG_DB_PATH` to both processes if the CLI and dashboard must share session history:
 
 ```powershell
 cd ui
