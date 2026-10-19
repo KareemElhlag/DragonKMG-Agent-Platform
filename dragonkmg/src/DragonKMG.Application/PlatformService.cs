@@ -5,13 +5,101 @@ namespace DragonKMG.Application;
 
 public sealed class PlatformService(IPlatformStore store, IModelGateway gateway, ISecretResolver secrets, ISkillContentResolver? skillContents = null)
 {
+    public Task<IReadOnlyList<FeatureTeamTemplate>> GetFeatureTeamTemplatesAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyList<FeatureTeamTemplate>>(NexusFeatureTeam.Templates);
+    }
+
+    public async Task<ProvisionedFeatureTeam> ProvisionFeatureTeamAsync(FeatureTeamProvisionRequest request, CancellationToken cancellationToken)
+    {
+        if (!string.Equals(request.TemplateKey, NexusFeatureTeam.Key, StringComparison.Ordinal))
+            throw new KeyNotFoundException("Feature team template was not found.");
+        if (request.ConnectionId == Guid.Empty || string.IsNullOrWhiteSpace(request.ModelId) || request.ModelId.Length > 256 || request.ModelId.Any(char.IsControl))
+            throw new ArgumentException("A valid model connection and model ID are required.", nameof(request));
+
+        var connection = await store.FindConnectionAsync(request.ConnectionId, cancellationToken)
+            ?? throw new KeyNotFoundException("Model connection was not found.");
+        if (!connection.Enabled) throw new InvalidOperationException("Model connection is disabled.");
+        var canonicalModelId = ModelIdentifier.Canonical(connection.Kind, request.ModelId);
+        var registeredModel = (await store.ListConnectionModelsAsync(connection.Id, cancellationToken))
+            .FirstOrDefault(model => model.Enabled && ModelIdentifier.Canonical(connection.Kind, model.ModelId) == canonicalModelId);
+        if (registeredModel is null) throw new InvalidOperationException("The selected model is not registered and enabled for this connection.");
+
+        var existingTeams = await store.ListTeamsAsync(cancellationToken);
+        var existingTeam = existingTeams.FirstOrDefault(team => string.Equals(team.Name, NexusFeatureTeam.Name, StringComparison.OrdinalIgnoreCase));
+        if (existingTeam is not null)
+        {
+            TeamPolicy.Validate(existingTeam);
+            var persistedAgents = new List<AgentDefinition>(existingTeam.AgentIds.Count);
+            foreach (var agentId in existingTeam.AgentIds)
+                persistedAgents.Add(await store.FindAgentAsync(agentId, cancellationToken) ?? throw new FeatureTeamProvisionConflictException("The existing feature team references a missing agent."));
+            if (persistedAgents.Count != NexusFeatureTeam.Agents.Count || !persistedAgents.Select(agent => agent.Name).SequenceEqual(NexusFeatureTeam.Agents.Select(agent => agent.Name), StringComparer.Ordinal))
+                throw new FeatureTeamProvisionConflictException("The existing feature team does not match the provisioned template order.");
+            return new ProvisionedFeatureTeam(existingTeam, persistedAgents);
+        }
+
+        var allSkills = await store.ListSkillsAsync(cancellationToken);
+        var skillByKey = allSkills.Where(skill => skill.Enabled).ToDictionary(skill => skill.Key, StringComparer.OrdinalIgnoreCase);
+        var requiredSkillKeys = NexusFeatureTeam.Agents.SelectMany(agent => agent.SkillKeys).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+        var missingSkills = requiredSkillKeys.Where(key => !skillByKey.ContainsKey(key)).ToArray();
+        if (missingSkills.Length > 0) throw new InvalidOperationException($"Required feature team skills are missing or disabled: {string.Join(", ", missingSkills)}.");
+
+        var allRoles = await store.ListRolesAsync(cancellationToken);
+        var roleIds = allRoles.Where(role => role.IsSystem).Select(role => role.Id).ToHashSet();
+        var missingRoles = NexusFeatureTeam.Agents.Where(agent => !roleIds.Contains(agent.RoleId)).Select(agent => agent.RoleId).Distinct().ToArray();
+        if (missingRoles.Length > 0) throw new InvalidOperationException("Required feature team roles are not registered.");
+
+        var existingAgents = await store.ListAgentsAsync(cancellationToken);
+        // Detect deterministic name/role collisions before the first write, so a bad template
+        // collision cannot leave a partially provisioned team behind.
+        foreach (var template in NexusFeatureTeam.Agents)
+        {
+            var collision = existingAgents.FirstOrDefault(value => string.Equals(value.Name, template.Name, StringComparison.OrdinalIgnoreCase));
+            if (collision is not null && (collision.RoleId != template.RoleId || collision.Mode != template.Mode))
+                throw new FeatureTeamProvisionConflictException($"An existing custom agent named '{template.Name}' has an incompatible role or mode.");
+        }
+        var agents = new List<AgentDefinition>(NexusFeatureTeam.Agents.Count);
+        var now = DateTimeOffset.UtcNow;
+        foreach (var template in NexusFeatureTeam.Agents)
+        {
+            var agent = existingAgents.FirstOrDefault(value => string.Equals(value.Name, template.Name, StringComparison.OrdinalIgnoreCase));
+            if (agent is null)
+            {
+                agent = new AgentDefinition(Guid.NewGuid(), template.Name, template.Description, template.RoleId, template.Instructions, true,
+                    canonicalModelId, connection.Id, 1, now, now, template.Mode);
+                await store.SaveAgentAsync(agent, cancellationToken);
+                var assignments = template.SkillKeys.Select((key, index) =>
+                    new AgentSkillAssignment(agent.Id, skillByKey[key].Id, true, index + 1, "{}", 1)).ToArray();
+                await store.ReplaceAssignmentsAsync(agent.Id, assignments, cancellationToken);
+            }
+            else
+            {
+                // Recover a partially completed prior provisioning without replacing edited instructions,
+                // connection/model, enabled state, tool grants, or any existing skill assignments.
+                var currentAssignments = await store.ListAssignmentsAsync(agent.Id, cancellationToken);
+                var existingSkillIds = currentAssignments.Select(assignment => assignment.SkillId).ToHashSet();
+                var nextPriority = currentAssignments.Select(assignment => assignment.Priority).DefaultIfEmpty(0).Max() + 1;
+                var additions = template.SkillKeys.Select(key => skillByKey[key]).Where(skill => !existingSkillIds.Contains(skill.Id))
+                    .Select((skill, index) => new AgentSkillAssignment(agent.Id, skill.Id, true, nextPriority + index, "{}", 1)).ToArray();
+                if (additions.Length > 0) await store.ReplaceAssignmentsAsync(agent.Id, currentAssignments.Concat(additions).ToArray(), cancellationToken);
+            }
+            agents.Add(agent);
+        }
+
+        var team = new TeamDefinition(Guid.NewGuid(), NexusFeatureTeam.Name, NexusFeatureTeam.Description, true, agents.Select(agent => agent.Id).ToArray(), 1);
+        await store.SaveTeamAsync(team, cancellationToken);
+        return new ProvisionedFeatureTeam(team, agents);
+    }
+
     public async Task<IReadOnlyList<AgentDefinition>> ProvisionDefaultCouncilAsync(DefaultCouncilProvisionRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.ModelId)) throw new ArgumentException("A model ID is required.", nameof(request));
         var connection = await store.FindConnectionAsync(request.ConnectionId, cancellationToken) ?? throw new KeyNotFoundException("Model connection was not found.");
         if (!connection.Enabled) throw new InvalidOperationException("Model connection is disabled.");
         var existing = await store.ListAgentsAsync(cancellationToken);
-        var defaults = (await store.ListSkillsAsync(cancellationToken)).Where(skill => skill.Enabled && skill.TrustLevel == "local-default").OrderBy(skill => skill.Name).ToArray();
+        var featureOnlySkillKeys = new HashSet<string>(FeatureTeamSkills.Additional.Select(skill => skill.Key), StringComparer.OrdinalIgnoreCase);
+        var defaults = (await store.ListSkillsAsync(cancellationToken)).Where(skill => skill.Enabled && skill.TrustLevel == "local-default" && !featureOnlySkillKeys.Contains(skill.Key)).OrderBy(skill => skill.Name).ToArray();
         var result = new List<AgentDefinition>();
         foreach (var template in DefaultCouncil.Agents)
         {

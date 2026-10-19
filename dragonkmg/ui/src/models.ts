@@ -1,4 +1,18 @@
 export type TeamDefinition = { id: string; name: string; description: string; enabled: boolean; agentIds: string[]; version: number };
+export type TeamTemplateAgent = {
+  name: string;
+  description: string;
+  roleId: string;
+  instructions: string;
+  mode: number | string;
+  skillKeys: string[];
+};
+export type TeamTemplate = {
+  key: string;
+  name: string;
+  description: string;
+  agents: TeamTemplateAgent[];
+};
 export type Role = {
   id: string;
   name: string;

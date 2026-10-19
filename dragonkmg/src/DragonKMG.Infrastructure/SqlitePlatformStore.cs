@@ -74,13 +74,16 @@ public sealed partial class SqlitePlatformStore(string databasePath) : IPlatform
         await EnsureColumnAsync(connection, "skills", "source_type", "TEXT NOT NULL DEFAULT 'user'", cancellationToken);
         await EnsureColumnAsync(connection, "skills", "source_ref", "TEXT NOT NULL DEFAULT ''", cancellationToken);
         await EnsureColumnAsync(connection, "agents", "mode", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
-        foreach (var role in DefaultCouncil.Roles) await SaveRoleAsync(role, cancellationToken);
+        foreach (var role in DefaultCouncil.Roles.Concat(NexusFeatureTeam.Roles)) await SaveRoleAsync(role, cancellationToken);
         foreach (var skill in DefaultSkillCatalog.Skills)
         {
             var existing = await FindSkillAsync(skill.Id, cancellationToken);
             if (existing is null) await SaveSkillAsync(skill, cancellationToken);
             else if (DefaultSkillCatalog.IsUnmodifiedLegacy(existing)) await SaveSkillAsync(skill with { Enabled = existing.Enabled }, cancellationToken);
         }
+        var registeredSkillKeys = (await ListSkillsAsync(cancellationToken)).Select(skill => skill.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var skill in FeatureTeamSkills.Additional)
+            if (!registeredSkillKeys.Contains(skill.Key)) await SaveSkillAsync(skill, cancellationToken);
     }
 
     public async Task<IReadOnlyList<ProviderConnection>> ListConnectionsAsync(CancellationToken ct) => await ReadManyAsync("SELECT * FROM connections ORDER BY name", ReadConnection, ct);

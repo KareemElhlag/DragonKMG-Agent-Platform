@@ -7,6 +7,16 @@ public static class TeamRoutes
 {
     public static void MapTeamRoutes(this WebApplication app)
     {
+        app.MapGet("/api/teams/templates", async (PlatformService service, CancellationToken ct) =>
+            Results.Ok(await service.GetFeatureTeamTemplatesAsync(ct)));
+        app.MapPost("/api/teams/provision", async (FeatureTeamProvisionRequest request, PlatformService service, CancellationToken ct) =>
+        {
+            try { return Results.Ok(await service.ProvisionFeatureTeamAsync(request, ct)); }
+            catch (KeyNotFoundException) { return Results.NotFound(new { code = "TemplateOrConnectionUnavailable" }); }
+            catch (FeatureTeamProvisionConflictException) { return Results.Conflict(new { code = "FeatureTeamProvisionConflict" }); }
+            catch (ArgumentException) { return Results.BadRequest(new { code = "InvalidConfiguration" }); }
+            catch (InvalidOperationException) { return Results.UnprocessableEntity(new { code = "FeatureTeamPrerequisiteUnavailable" }); }
+        });
         app.MapGet("/api/teams", async (IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListTeamsAsync(ct)));
         app.MapPut("/api/teams/{id:guid}", async (Guid id, TeamDefinition value, IPlatformStore store, CancellationToken ct) =>
         {

@@ -14,4 +14,8 @@
     <ProjectReference Include="..\DragonKMG.LocalRuntime\DragonKMG.LocalRuntime.csproj" />
     <ProjectReference Include="..\DragonKMG.ToolGateway\DragonKMG.ToolGateway.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\skills\**\*" Link="skills\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

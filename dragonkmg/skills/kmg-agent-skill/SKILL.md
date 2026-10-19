@@ -38,6 +38,8 @@ For security review, defensive penetration-test planning, hardening, or vulnerab
 Cyber KMG Security owns authorization scope, attack-surface mapping, safe test selection, evidence isolation,
 severity calibration, and remediation/retest discipline.
 
+For performance-sensitive NexusCore features involving complexity, allocations, locks/threads, memory, event flow, or context/token budgets, also load the project skill `nexus-feature-performance/SKILL.md`. KMG remains the lifecycle, architecture-boundary, evidence, and release-gate authority; the specialist supplies focused performance and concurrency decision criteria. For a post-implementation cross-system readiness assessment, load `nexus-master-audit-skill/SKILL.md`; it reports only measurements gathered against the current tree and does not replace the mandatory Senior Monitor.
+
 ## Required closing report
 
 Every completed task ends with: **تم إنجازه**, **تم تحسينه**, and **المتبقي**. Include evidence for claims,
