@@ -54,6 +54,27 @@ public sealed class IntegrationHardeningTests
     }
 
     [Fact]
+    public void McpServerSummariesExposeOnlySafeStatusAndGrantCounts()
+    {
+        var registry = new McpStaticRegistry(
+            [new McpHttpServer("private-server", new Uri("https://secret.example/private/path")),
+             new McpHttpServer("disabled-server", new Uri("https://disabled.example/mcp"), Enabled: false)],
+            [new McpToolGrant("agent-secret-guid", "private-server", "read")]);
+
+        var summaries = registry.GetServerSummaries();
+
+        Assert.Equal(2, summaries.Count);
+        Assert.Equal("disabled-server", summaries[0].ServerId);
+        Assert.False(summaries[0].Enabled);
+        Assert.Equal("private-server", summaries[1].ServerId);
+        Assert.True(summaries[1].Enabled);
+        Assert.Equal(1, summaries[1].GrantCount);
+        var serialized = JsonSerializer.Serialize(summaries);
+        Assert.DoesNotContain("secret.example", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("agent-secret-guid", serialized, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void McpSchemaRejectsUnsupportedKeywordsAndExtraProperties()
     {
         Assert.Throws<McpHttpException>(() => McpInputSchemaValidator.ValidateSchema(

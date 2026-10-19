@@ -41,8 +41,12 @@ export function SessionProjectBar({ chat }: { chat: SessionChatController }) {
     </div>
     <div id="chat-plugin-menu" className="chat-context-popover" popover="auto" role="dialog" aria-label={t("Plugins and connections")} onToggle={event => setPluginsOpen(event.currentTarget.matches(":popover-open"))}>
       <div className="chat-context-heading"><strong>{t("Plugins and connections")}</strong><button type="button" popoverTarget="chat-plugin-menu" popoverTargetAction="hide" aria-label={t("Close")}>×</button></div>
-      {pluginsOpen && <GitHubConnectionPanel key={chat.projectId} projectId={chat.projectId} />}
-      <div className="chat-plugin-roadmap"><strong>{t("Planned for next sprint")}</strong><ol><li>LinkedIn</li><li>Gmail</li></ol><p>{t("Planning only. No accounts connected or permissions granted.")}</p></div>
+      {pluginsOpen && <details className="chat-plugin-section">
+        <summary><strong>GitHub</strong><span>{t("Account, repositories and project binding")}</span></summary>
+        <GitHubConnectionPanel key={chat.projectId} projectId={chat.projectId} />
+      </details>}
+      <div className="chat-plugin-mcp"><strong>MCP</strong><span>{t("Runtime status and tool discovery are available in Integrations.")}</span></div>
+      <details className="chat-plugin-roadmap"><summary>{t("Planned integrations")}</summary><p>{t("LinkedIn and Gmail are planned for a later sprint. No accounts are connected and no permissions have been granted.")}</p></details>
     </div>
   </section>;
 }

@@ -22,6 +22,13 @@ public sealed class McpStaticRegistry
     private readonly HashSet<McpToolGrant> _grants;
     public int ServerCount => _servers.Count;
 
+    /// <summary>Returns non-sensitive runtime metadata; endpoints and agent identities stay private.</summary>
+    public IReadOnlyList<McpServerSummary> GetServerSummaries() => _servers.Values
+        .OrderBy(server => server.Id, StringComparer.Ordinal)
+        .Select(server => new McpServerSummary(server.Id, server.Enabled,
+            _grants.Count(grant => StringComparer.Ordinal.Equals(grant.ServerId, server.Id))))
+        .ToArray();
+
     public McpStaticRegistry(IEnumerable<McpHttpServer> servers, IEnumerable<McpToolGrant> grants)
     {
         ArgumentNullException.ThrowIfNull(servers);
@@ -52,6 +59,8 @@ public sealed class McpStaticRegistry
             throw new UnauthorizedAccessException("MCP tool is not explicitly granted to this agent.");
     }
 }
+
+public sealed record McpServerSummary(string ServerId, bool Enabled, int GrantCount);
 
 public sealed record McpRemoteTool(string Name, string? Description, string InputSchemaJson);
 

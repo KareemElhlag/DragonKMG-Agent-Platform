@@ -12,6 +12,7 @@
   border-radius: 18px;
   box-shadow: 0 2px 10px color-mix(in srgb, var(--text) 4%, transparent);
   transition: border-color 120ms ease, box-shadow 120ms ease;
+  overflow: visible;
 }
 .chat-compose-area .chat-composer:focus-within {
   border-color: var(--accent);
@@ -30,9 +31,9 @@
 .chat-compose-area .chat-composer textarea {
   display: block;
   width: 100%;
-  min-height: 64px;
+  min-height: 54px;
   max-height: 180px;
-  padding: 5px 3px 8px;
+  padding: 4px 3px 6px;
   margin: 0;
   resize: none;
   font-size: .91rem;
@@ -43,8 +44,19 @@
   scrollbar-color: var(--line) transparent;
 }
 .chat-compose-area .chat-composer textarea::placeholder { color: var(--muted); opacity: .9; }
-.chat-compose-area .chat-composer-actions { align-items: center; gap: 10px; padding-top: 8px; }
-.chat-compose-area .chat-composer-context { gap: 5px; flex: 1; }
+.chat-compose-area .chat-execution-mode { display:flex; align-items:center; flex:0 0 auto; flex-wrap:nowrap; gap:5px; padding:0; color:var(--muted); font-size:.68rem; }
+.chat-compose-area .chat-execution-mode label { display:flex; align-items:center; gap:5px; }
+.chat-compose-area .chat-execution-mode label > span { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.chat-compose-area .chat-execution-mode select { min-width:102px; max-width:132px; min-height:27px; padding:3px 5px; border:1px solid var(--line); border-radius:7px; background:var(--surface); color:var(--text); font-size:.67rem; }
+.chat-compose-area .chat-execution-mode select { direction:rtl; }
+.chat-compose-area .chat-execution-mode select:hover { background:var(--raised); }
+.chat-compose-area .chat-execution-mode select:focus-visible { border-color:var(--accent); outline:2px solid color-mix(in srgb,var(--accent) 22%,transparent); outline-offset:1px; }
+.chat-compose-area .chat-composer-actions { direction:ltr; align-items:center; gap:8px; padding-top:5px; }
+.chat-compose-area .chat-composer-context { direction:rtl; display:flex; align-items:center; gap:3px; flex:1; min-width:0; }
+.chat-compose-area .chat-composer-context .chat-project-bar { flex:0 1 auto; min-width:0; padding:0; margin:0; }
+.chat-compose-area .chat-composer-context .chat-project-bar-row { flex-wrap:nowrap; gap:2px; }
+.chat-compose-area .chat-composer-context .chat-context-trigger { min-height:27px; padding:3px 5px; border-radius:6px; font-size:.68rem; }
+.chat-compose-area .chat-composer-context .chat-context-trigger:hover { background:var(--raised); }
 .chat-compose-area .chat-composer-context button {
   display: inline-flex;
   align-items: center;
@@ -64,14 +76,16 @@
 .chat-compose-area .chat-composer button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .chat-compose-area .chat-composer-context .icon { width: 14px; height: 14px; }
 .chat-compose-area .chat-attach-symbol { font-size: 1.2rem; line-height: 1; font-weight: 400; }
+.chat-compose-area .chat-composer-context .chat-attach-button { width:34px; min-width:34px; height:34px; padding:0; justify-content:center; border:0; font-size:1.5rem; }
+.chat-compose-area .chat-composer-context .chat-permissions-button { gap:5px; padding-inline:7px; }
 .chat-compose-area .chat-team-chip,
 .chat-compose-area .chat-project-chip { display: inline-flex; align-items: center; gap: 5px; min-width: 0; max-width: 150px; padding: 5px 7px; color: var(--muted); font-size: .69rem; }
 .chat-compose-area .chat-team-chip bdi,
 .chat-compose-area .chat-project-chip bdi { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chat-compose-area .chat-project-chip { border-inline-start: 1px solid var(--line); }
 .chat-compose-area .chat-send,
-.chat-compose-area .chat-stop { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 7px 12px; border-radius: 10px; font-size: .75rem; }
-.chat-compose-area .chat-send span { font-size: 1.2rem; line-height: 1; }
+.chat-compose-area .chat-stop { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width:38px; height:38px; padding:0; border-radius:50%; font-size:1.25rem; line-height:1; }
+.chat-compose-area .chat-send span { font-size: 1.35rem; line-height: 1; }
 .chat-compose-area .chat-stop { background: var(--raised); color: var(--text); border-color: var(--line); }
 .chat-compose-area .chat-composer-hint { margin: 7px 0 0; font-size: .64rem; }
 .chat-compose-area .chat-file-context {
@@ -92,11 +106,16 @@
 @media (max-width: 700px) {
   .chat-conversation > .chat-compose-area { padding: 8px 12px max(8px, env(safe-area-inset-bottom)); }
   .chat-compose-area .chat-composer { padding: 10px 11px 9px; border-radius: 15px; }
-  .chat-compose-area .chat-composer textarea { min-height: 64px; max-height: 130px; font-size: 16px; }
-  .chat-compose-area .chat-composer-actions { align-items: end; gap: 6px; }
-  .chat-compose-area .chat-composer-context { gap: 2px; }
-  .chat-compose-area .chat-composer-context button { padding: 5px 6px; }
-  .chat-compose-area .chat-team-chip { max-width: 110px; }
+  .chat-compose-area .chat-composer textarea { min-height: 54px; max-height: 130px; font-size: 16px; }
+  .chat-compose-area .chat-execution-mode { gap:3px; }
+  .chat-compose-area .chat-execution-mode select { min-width:88px; max-width:108px; padding:3px 4px; }
+  .chat-compose-area .chat-composer-actions { align-items: center; gap: 5px; }
+  .chat-compose-area .chat-composer-context { gap: 1px; }
+  .chat-compose-area .chat-composer-context button { padding: 4px 5px; }
+  .chat-compose-area .chat-composer-context .chat-permissions-button span { display:none; }
+  .chat-compose-area .chat-composer-context .chat-context-trigger { max-width:30vw; }
+  .chat-compose-area .chat-composer-context .chat-context-trigger span:first-child { max-width:20vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chat-compose-area .chat-send,.chat-compose-area .chat-stop { width:36px; height:36px; }
   .chat-compose-area .chat-project-chip { max-width: 100px; }
   .chat-compose-area .chat-file-context { inset-inline: 12px; max-height: min(28dvh, 220px); }
 }

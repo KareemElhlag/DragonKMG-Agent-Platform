@@ -104,6 +104,7 @@ app.MapGet("/api/operations/readiness", (IHostEnvironment environment) => Result
     mcpServerCount = mcpRegistry.ServerCount,
     backupDirectoryConfigured = !string.IsNullOrWhiteSpace(backupDirectory)
 }));
+app.MapGet("/api/mcp/servers", () => Results.Ok(mcpRegistry.GetServerSummaries()));
 app.MapGet("/api/operations/backups", async (CancellationToken ct) => Results.Ok(await backupRunner.ListAsync(ct)));
 app.MapPost("/api/operations/backups", async (CancellationToken ct) =>
 {

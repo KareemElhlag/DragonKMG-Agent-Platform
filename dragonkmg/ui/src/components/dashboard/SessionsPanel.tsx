@@ -28,7 +28,7 @@ export function SessionsPanel({ dashboard }: { dashboard: DashboardController })
       <SessionSettings chat={chat} />
       {error && <div className="alert error chat-error" role="alert">{t(error)}<button type="button" disabled={chat.busy || chat.loading} onClick={() => void chat.refresh()}>{t("Retry")}</button></div>}
       {questions.filter(question => question.status === 0).map(question => <section className="chat-question-card" key={question.id}><strong>{question.prompt}</strong>{question.recommendation && <small className="chat-question-recommendation">{t("AI recommendation")}: {question.recommendation}</small>}<div>{JSON.parse(question.optionsJson).map((option: string) => <button type="button" key={option} onClick={() => void answerQuestion(question, option)}>{option}</button>)}</div><div className="chat-question-manual"><input value={manualAnswers[question.id] ?? ""} onChange={event => setManualAnswers(values => ({ ...values, [question.id]: event.target.value }))} placeholder={t("Enter a manual answer")} maxLength={2000} /><button type="button" disabled={!manualAnswers[question.id]?.trim()} onClick={() => void answerQuestion(question, manualAnswers[question.id].trim(), "manual")}>{t("Submit manual answer")}</button><button type="button" onClick={() => void answerQuestion(question, "__skipped__", "skip")}>{t("Skip")}</button></div></section>)}
-      <SessionMessages chat={chat} /><SessionComposer chat={chat} teamName={team?.name} agents={dashboard.agents} />
+      <SessionMessages chat={chat} /><SessionComposer chat={chat} agents={dashboard.agents} />
     </div>
   </section>;
 }

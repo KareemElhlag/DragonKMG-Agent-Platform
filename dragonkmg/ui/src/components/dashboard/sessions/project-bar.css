@@ -4,7 +4,7 @@
 .chat-project-bar .chat-context-trigger { display: inline-flex; align-items: center; gap: 8px; max-width: min(260px, 65vw); min-height: 32px; padding: 5px 9px; background: transparent; color: var(--muted); border: 1px solid transparent; border-radius: 8px; }
 .chat-project-bar .chat-context-trigger:hover { background: var(--raised); color: var(--text); border-color: var(--line); }
 .chat-context-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chat-context-popover { position: fixed; position-anchor: --chat-project-context; inset: auto; right: max(12px, anchor(right)); bottom: anchor(top); margin: 0 0 8px; width: min(420px, calc(100vw - 24px)); max-height: min(60dvh, 480px); overflow: auto; overscroll-behavior: contain; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); scrollbar-width: thin; }
+.chat-context-popover { position: fixed; position-anchor: --chat-project-context; inset: auto; right: max(12px, anchor(right)); bottom: anchor(top); margin: 0 0 8px; width: min(370px, calc(100vw - 24px)); max-height: min(52dvh, 380px); overflow: auto; overscroll-behavior: contain; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); scrollbar-width: thin; }
 .chat-context-popover::backdrop { background: transparent; }
 @supports not (bottom: anchor(top)) {
   .chat-context-popover { inset: 12px; margin: auto; height: fit-content; }
@@ -17,9 +17,14 @@
 .chat-plugin-plan { font-size: .72rem; color: var(--muted); }
 .chat-plugin-plan > summary { cursor: pointer; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; }
 .chat-plugin-plan > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.chat-plugin-roadmap { padding: 10px; border-inline-start: 2px solid var(--line); line-height: 1.7; max-width: 320px; }
-.chat-plugin-roadmap ol { margin-block: 6px; padding-inline-start: 22px; }
-.chat-plugin-roadmap p { margin: 0; }
+.chat-plugin-section, .chat-plugin-roadmap { border-bottom: 1px solid var(--line); }
+.chat-plugin-section > summary, .chat-plugin-roadmap > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; padding: 11px 4px; font-size: .78rem; list-style-position: inside; }
+.chat-plugin-section > summary span { color: var(--muted); font-size: .68rem; text-align: end; }
+.chat-plugin-section > summary:focus-visible, .chat-plugin-roadmap > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chat-plugin-section .github-connection { padding: 0 4px 10px; }
+.chat-plugin-mcp { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 11px 4px; border-bottom: 1px solid var(--line); font-size: .76rem; }
+.chat-plugin-mcp span, .chat-plugin-roadmap p { color: var(--muted); font-size: .69rem; line-height: 1.6; }
+.chat-plugin-roadmap p { margin: 0 4px 10px; }
 .chat-project-bar-row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; min-width: 0; }
 .chat-project-picker { display: flex; align-items: center; gap: 9px; margin: 0; font-size: .73rem; min-width: 0; flex: 1 1 210px; max-width: 360px; }
 .chat-project-picker > span { flex-shrink: 0; color: var(--muted); }
@@ -45,4 +50,5 @@
   .chat-project-picker { flex-basis: 180px; }
   .chat-project-breadcrumb { order: 3; flex-basis: 100%; }
   .chat-create-project { gap: 10px; }
+  .chat-context-popover { width: min(360px, calc(100vw - 20px)); max-height: min(58dvh, 420px); padding: 10px; }
 }

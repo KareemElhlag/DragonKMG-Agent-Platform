@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useI18n } from "../../../i18n";
 import type { SessionMessage as Message } from "../../../models";
 import { presentMessage } from "../../../services/messagePresentation";
+import { ChatMarkdown } from "./ChatMarkdown";
 import "./message.css";
 
 export function SessionMessage({ message }: { message: Message }) {
@@ -16,8 +17,8 @@ export function SessionMessage({ message }: { message: Message }) {
     catch { setCopied(false); setCopyFailed(true); }
   };
   return <article className={`chat-message ${message.role === "user" ? "is-user" : "is-assistant"}`}>
-    <header><strong><bdi>{view.label || t(message.role === "user" ? "Session role: user" : message.role === "assistant" ? "Session role: assistant" : "Execution record")}</bdi></strong>{timestamp}</header>
-    <div dir="auto" className="session-chat-text">{view.body}</div>
+    <header><strong><bdi>{view.label || t(message.role === "user" ? "Session role: user" : message.role === "assistant" ? "Session role: assistant" : "Execution record")}</bdi></strong>{view.localReply && <span className="chat-message-status">{t("Quick local reply · model not called")}</span>}{timestamp}</header>
+    <div dir="auto" className="session-chat-text"><ChatMarkdown source={view.body} /></div>
     <footer className="chat-message-actions" aria-label={t("Message actions")}>
       <button type="button" onClick={() => void copy()}>{t(copied ? "Copied" : "Copy message")}</button>
       {view.hasDetails && <details><summary>{t("Run details")}</summary><pre dir="auto">{message.content}</pre></details>}
