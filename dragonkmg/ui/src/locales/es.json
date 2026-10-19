@@ -263,7 +263,7 @@
 ,
   "Edit": "Editar",
   "Description": "Descripción",
-  "Cancel": "Cancelar",
+  "Cancel": "Cancelar", "Skip": "Omitir",
   "Team changed elsewhere. Reload teams before saving again.": "El equipo cambió. Recarga antes de guardar."
 ,
   "Clear session default": "Borrar predeterminado"

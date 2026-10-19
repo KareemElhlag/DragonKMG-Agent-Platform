@@ -263,7 +263,7 @@
 ,
   "Edit": "تعديل",
   "Description": "الوصف",
-  "Cancel": "إلغاء",
+  "Cancel": "إلغاء", "Skip": "تخطي",
   "Team changed elsewhere. Reload teams before saving again.": "تم تعديل الفريق من مكان آخر. أعد تحميل الفرق قبل الحفظ."
 ,
   "Clear session default": "إزالة افتراضي الجلسة"

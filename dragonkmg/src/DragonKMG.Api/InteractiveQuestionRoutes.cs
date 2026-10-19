@@ -13,7 +13,20 @@ public static class InteractiveQuestionRoutes
         {
             var question = await store.FindInteractiveQuestionAsync(questionId, ct);
             if (question is null || question.SessionId != id) return Results.NotFound(new { code = "QuestionUnavailable" });
-            if (question.Status != InteractiveQuestionStatus.Pending || question.ExpiresAt <= DateTimeOffset.UtcNow) return Results.Conflict(new { code = "QuestionClosed" });
+            if (question.Status != InteractiveQuestionStatus.Pending) return Results.Conflict(new { code = "QuestionClosed" });
+            if (question.ExpiresAt <= DateTimeOffset.UtcNow)
+            {
+                var expired = question with { Status = InteractiveQuestionStatus.Expired };
+                await store.SaveInteractiveQuestionAsync(expired, ct);
+                return Results.Conflict(new { code = "QuestionExpired", question = expired });
+            }
+            if (string.Equals(request.Decision, "skip", StringComparison.OrdinalIgnoreCase))
+            {
+                var skipped = question with { Status = InteractiveQuestionStatus.Cancelled, Answer = "__skipped__", AnsweredAt = DateTimeOffset.UtcNow };
+                await store.SaveInteractiveQuestionAsync(skipped, ct);
+                return Results.Ok(skipped);
+            }
+            if (!string.Equals(request.Decision, "answer", StringComparison.OrdinalIgnoreCase)) return Results.BadRequest(new { code = "DecisionRequired" });
             using var options = JsonDocument.Parse(question.OptionsJson);
             if (!options.RootElement.EnumerateArray().Any(item => string.Equals(item.GetString(), request.Answer, StringComparison.Ordinal))) return Results.BadRequest(new { code = "AnswerNotAllowed" });
             var answered = question with { Status = InteractiveQuestionStatus.Answered, Answer = request.Answer, AnsweredAt = DateTimeOffset.UtcNow };
@@ -22,4 +35,4 @@ public static class InteractiveQuestionRoutes
         });
     }
 }
-public sealed record QuestionAnswerRequest(string Answer);
+public sealed record QuestionAnswerRequest(string Answer, string Decision = "answer");

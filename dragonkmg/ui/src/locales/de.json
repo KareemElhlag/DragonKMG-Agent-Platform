@@ -263,7 +263,7 @@
 ,
   "Edit": "Bearbeiten",
   "Description": "Beschreibung",
-  "Cancel": "Abbrechen",
+  "Cancel": "Abbrechen", "Skip": "Überspringen",
   "Team changed elsewhere. Reload teams before saving again.": "Das Team wurde geändert. Vor dem Speichern neu laden."
 ,
   "Clear session default": "Sitzungsstandard entfernen"
