@@ -29,6 +29,8 @@ export function useSessionChat(dashboard: DashboardController) {
   const projectData = useSessionProjects(sessionId);
   const teamData = useTeams();
   const [teamId, setTeamId] = useState("");
+  const [executionMode, setExecutionMode] = useState<"team" | "agent">("team");
+  const [agentId, setAgentId] = useState("");
   const [defaultTeamId, setDefaultTeamId] = useState("");
   const [teamSaved, setTeamSaved] = useState(false);
   const [draft, updateDraft] = useState(() => drafts.get(sessionId) ?? "");
@@ -82,13 +84,14 @@ export function useSessionChat(dashboard: DashboardController) {
   };
   const send = async () => {
     if (lock.current || savedHistory.loading || projectData.projectBusy || fileData.fileBusy || !sessionId || !draft.trim()) return;
-    if (!teamId && !defaultTeamId && !/^\/team\s+\S+/i.test(draft)) { setError("Choose a team for this request or save a default team for this session."); return; }
+    if (executionMode === "team" && !teamId && !defaultTeamId && !/^\/team\s+\S+/i.test(draft)) { setError("Choose a team for this request or save a default team for this session."); return; }
+    if (executionMode === "agent" && !agentId) { setError("Choose an agent for this request."); return; }
     lock.current = true; setBusy(true); setError("");
     const pending = new AbortController(); controller.current = pending;
     setSending(true);
     const requestId = execution.begin();
     try {
-      await request<{ runId: string; output: string }>(`/api/sessions/${sessionId}/messages`, { method: "POST", signal: pending.signal, body: JSON.stringify({ requestId, ...(teamId ? { teamId } : {}), input: draft, allowFileEgress: fileData.allowFileEgress, fileApprovalScope: fileData.fileApprovalScope }) });
+      await request<{ runId: string; output: string }>(`/api/sessions/${sessionId}/messages`, { method: "POST", signal: pending.signal, body: JSON.stringify({ requestId, ...(executionMode === "agent" ? { agentId } : {}), ...(executionMode === "team" && teamId ? { teamId } : {}), input: draft, allowFileEgress: fileData.allowFileEgress, fileApprovalScope: fileData.fileApprovalScope }) });
       setDraft(""); await savedHistory.refresh();
     } catch (cause) {
       const failure = pending.signal.aborted ? "Request stopped. Refresh history before sending again." : sessionErrorKey(cause);
@@ -115,6 +118,7 @@ export function useSessionChat(dashboard: DashboardController) {
     historyHasMore: savedHistory.hasMore, loadOlder: savedHistory.loadOlder, historyLoadingOlder: savedHistory.loadingOlder,
     teams: teamData.teams, teamsLoading: teamData.loading, teamsError: teamData.error, refreshTeams: teamData.refresh,
     teamId, setTeamId: (value: string) => { fileData.resetFileConsent(); setTeamId(value); },
+    executionMode, setExecutionMode, agentId, setAgentId,
     setProject: (value: string) => { fileData.resetFileConsent(); return projectData.setProject(value); },
     defaultTeamId, teamSaved, saveDefaultTeam, draft, setDraft, loading: savedHistory.loading,
     busy, sending, error, selectSession, create, send, refresh, cancel: () => controller.current?.abort(),

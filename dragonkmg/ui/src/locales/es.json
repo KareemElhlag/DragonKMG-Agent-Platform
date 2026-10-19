@@ -332,5 +332,7 @@
 "Planned for next sprint": "Previsto para el próximo sprint",
 "Planning only. No accounts connected or permissions granted.": "Solo planificación. No hay cuentas conectadas ni permisos concedidos."
 ,
- "ProjectFolderUnavailable": "Introduce una carpeta local existente, no un archivo. No se aceptan carpetas inexistentes ni rutas de red."
+ "ProjectFolderUnavailable": "Introduce una carpeta local existente, no un archivo. No se aceptan carpetas inexistentes ni rutas de red.", "Execution mode": "Modo de ejecución", "Run with": "Ejecutar con", "Full team": "Equipo completo", "Single agent": "Agente único", "Agent": "Agente", "Choose agent": "Elegir agente", "All ordered team members will run": "Se ejecutarán todos los miembros en orden", "Choose an agent for this request.": "Elija un agente para esta solicitud.", "Workflow": "Flujo de trabajo", "Choose workflow": "Elegir flujo", "stages": "etapas", "Visual workflow editor": "Editor visual del flujo", "Approval required": "Requiere aprobación", "Workflow could not be loaded.": "No se pudo cargar el flujo."
+,
+ "Edit workflow": "Editar flujo", "Saving…": "Guardando…", "Save workflow": "Guardar flujo"
 }

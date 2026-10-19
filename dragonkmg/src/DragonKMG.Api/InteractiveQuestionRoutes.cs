@@ -1,0 +1,25 @@
+using System.Text.Json;
+using DragonKMG.Application;
+using DragonKMG.Domain;
+
+namespace DragonKMG.Api;
+
+public static class InteractiveQuestionRoutes
+{
+    public static void MapInteractiveQuestionRoutes(this WebApplication app)
+    {
+        app.MapGet("/api/sessions/{id:guid}/questions", async (Guid id, IPlatformStore store, CancellationToken ct) => Results.Ok(await store.ListInteractiveQuestionsAsync(id, ct)));
+        app.MapPost("/api/sessions/{id:guid}/questions/{questionId:guid}/answer", async (Guid id, Guid questionId, QuestionAnswerRequest request, IPlatformStore store, CancellationToken ct) =>
+        {
+            var question = await store.FindInteractiveQuestionAsync(questionId, ct);
+            if (question is null || question.SessionId != id) return Results.NotFound(new { code = "QuestionUnavailable" });
+            if (question.Status != InteractiveQuestionStatus.Pending || question.ExpiresAt <= DateTimeOffset.UtcNow) return Results.Conflict(new { code = "QuestionClosed" });
+            using var options = JsonDocument.Parse(question.OptionsJson);
+            if (!options.RootElement.EnumerateArray().Any(item => string.Equals(item.GetString(), request.Answer, StringComparison.Ordinal))) return Results.BadRequest(new { code = "AnswerNotAllowed" });
+            var answered = question with { Status = InteractiveQuestionStatus.Answered, Answer = request.Answer, AnsweredAt = DateTimeOffset.UtcNow };
+            await store.SaveInteractiveQuestionAsync(answered, ct);
+            return Results.Ok(answered);
+        });
+    }
+}
+public sealed record QuestionAnswerRequest(string Answer);

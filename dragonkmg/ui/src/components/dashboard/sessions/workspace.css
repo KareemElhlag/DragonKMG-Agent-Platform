@@ -71,6 +71,7 @@
 .chat-composer-context button { padding: 5px 7px; font-size: .65rem; border-color: transparent; background: transparent; }
 .chat-team-chip { max-width: 200px; font-size: .7rem; color: var(--accent); overflow-wrap: anywhere; padding: 5px 8px; }
 .chat-send { display: flex; align-items: center; gap: 12px; white-space: nowrap; font-size: .78rem; padding: 9px 13px; }
+.chat-question-card{margin:8px 12px;padding:12px;border:1px solid var(--accent);border-radius:12px;background:var(--raised)}.chat-question-card strong{display:block;margin-bottom:8px}.chat-question-card button{margin-inline-end:8px;margin-block:4px}
 .chat-send span { font-size: 1.1rem; }
 .chat-composer-hint { text-align: center; font-size: .65rem; color: var(--muted); margin: 9px 0 0; }
 .chat-file-context { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; margin-bottom: 10px; padding: 12px; max-height: 36dvh; overflow: auto; }

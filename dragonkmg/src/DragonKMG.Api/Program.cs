@@ -64,6 +64,8 @@ app.Use(async (context, next) =>
 app.MapGet("/health", () => Results.Ok(new { status = "ok", hardware = HardwareProfiler.Probe() }));
 app.MapProviderConnectionRoutes();
 app.MapSessionConversationRoutes();
+app.MapInteractiveQuestionRoutes();
+app.MapSessionGraphRoutes();
 app.MapTeamRoutes();
 app.MapProjectHistoryRoutes();
 app.MapGitHubRoutes();

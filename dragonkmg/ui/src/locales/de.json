@@ -332,5 +332,7 @@
 "Planned for next sprint": "Für den nächsten Sprint geplant",
 "Planning only. No accounts connected or permissions granted.": "Nur Planung. Keine Konten verbunden oder Berechtigungen erteilt."
 ,
- "ProjectFolderUnavailable": "Geben Sie einen vorhandenen lokalen Projektordner an, keine Datei. Fehlende Ordner und Netzwerkpfade sind nicht zulässig."
+ "ProjectFolderUnavailable": "Geben Sie einen vorhandenen lokalen Projektordner an, keine Datei. Fehlende Ordner und Netzwerkpfade sind nicht zulässig.", "Execution mode": "Ausführungsmodus", "Run with": "Ausführen mit", "Full team": "Gesamtes Team", "Single agent": "Einzelner Agent", "Agent": "Agent", "Choose agent": "Agent auswählen", "All ordered team members will run": "Alle Teammitglieder werden der Reihe nach ausgeführt", "Choose an agent for this request.": "Wählen Sie einen Agenten für diese Anfrage.", "Workflow": "Workflow", "Choose workflow": "Workflow auswählen", "stages": "Stufen", "Visual workflow editor": "Visueller Workflow-Editor", "Approval required": "Genehmigung erforderlich", "Workflow could not be loaded.": "Workflow konnte nicht geladen werden."
+,
+ "Edit workflow": "Workflow bearbeiten", "Saving…": "Speichern…", "Save workflow": "Workflow speichern"
 }

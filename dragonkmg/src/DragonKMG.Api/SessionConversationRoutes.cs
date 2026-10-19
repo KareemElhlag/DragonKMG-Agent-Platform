@@ -13,7 +13,9 @@ public static class SessionConversationRoutes
             try
             {
                 var elapsed = System.Diagnostics.Stopwatch.StartNew();
-                var run = await service.SendTeamAsync(id, request.TeamId, request.Input, ct, request.QuickChat, request.AllowFileEgress, request.FileApprovalScope, tracker.Observe(id, request.RequestId ?? Guid.NewGuid()));
+                var run = request.AgentId is Guid agentId
+                    ? await service.SendAsync(id, agentId, request.Input, ct, request.QuickChat)
+                    : await service.SendTeamAsync(id, request.TeamId, request.Input, ct, request.QuickChat, request.AllowFileEgress, request.FileApprovalScope, tracker.Observe(id, request.RequestId ?? Guid.NewGuid()));
                 return Results.Ok(new { runId = run.Id, output = run.Output, elapsedMs = elapsed.ElapsedMilliseconds, instructionCharacters = run.EffectiveInstructions.Length, source = run.EffectiveInstructions.StartsWith(ConversationFastPath.SourceMarker, StringComparison.Ordinal) ? "local" : "provider" });
             }
             catch (SessionBusyException) { return Results.Json(new { code = "SessionBusy" }, statusCode: 409); }

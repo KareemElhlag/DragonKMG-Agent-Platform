@@ -332,5 +332,7 @@
 "Planned for next sprint": "Planned for next sprint",
 "Planning only. No accounts connected or permissions granted.": "Planning only. No accounts connected or permissions granted."
 ,
- "ProjectFolderUnavailable": "Enter an existing local project folder, not a file. Missing folders and network paths are not accepted."
+ "ProjectFolderUnavailable": "Enter an existing local project folder, not a file. Missing folders and network paths are not accepted.", "Execution mode": "Execution mode", "Run with": "Run with", "Full team": "Full team", "Single agent": "Single agent", "Agent": "Agent", "Choose agent": "Choose agent", "All ordered team members will run": "All ordered team members will run", "Choose an agent for this request.": "Choose an agent for this request.", "Workflow": "Workflow", "Choose workflow": "Choose workflow", "stages": "stages", "Visual workflow editor": "Visual workflow editor", "Approval required": "Approval required", "Workflow could not be loaded.": "Workflow could not be loaded."
+,
+ "Edit workflow": "Edit workflow", "Saving…": "Saving…", "Save workflow": "Save workflow"
 }

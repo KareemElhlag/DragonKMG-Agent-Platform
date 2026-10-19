@@ -332,5 +332,7 @@
 "Planned for next sprint": "مخطط للسبرنت القادم",
 "Planning only. No accounts connected or permissions granted.": "تخطيط فقط. لم يتم ربط حسابات أو منح صلاحيات."
 ,
- "ProjectFolderUnavailable": "أدخل مسار مجلد مشروع محلي موجود، وليس ملفاً. المجلدات غير الموجودة ومسارات الشبكة غير مقبولة."
+ "ProjectFolderUnavailable": "أدخل مسار مجلد مشروع محلي موجود، وليس ملفاً. المجلدات غير الموجودة ومسارات الشبكة غير مقبولة.", "Execution mode": "طريقة التنفيذ", "Run with": "تشغيل بواسطة", "Full team": "الفريق بالكامل", "Single agent": "وكيل واحد", "Agent": "الوكيل", "Choose agent": "اختر وكيلاً", "All ordered team members will run": "سيتم تشغيل أعضاء الفريق بالترتيب", "Choose an agent for this request.": "اختر وكيلاً لهذا الطلب.", "Workflow": "سير العمل", "Choose workflow": "اختر سير العمل", "stages": "مراحل", "Visual workflow editor": "محرر سير العمل المرئي", "Approval required": "يتطلب موافقة", "Workflow could not be loaded.": "تعذر تحميل سير العمل."
+,
+ "Edit workflow": "تعديل سير العمل", "Saving…": "جارٍ الحفظ…", "Save workflow": "حفظ سير العمل"
 }

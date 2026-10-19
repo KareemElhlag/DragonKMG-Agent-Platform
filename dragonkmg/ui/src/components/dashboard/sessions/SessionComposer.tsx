@@ -6,7 +6,7 @@ import { SessionProjectBar } from "./SessionProjectBar";
 import { ExecutionStatus } from "./ExecutionStatus";
 import { Icon } from "../../ui/Icon";
 import "./composer.css";
-export function SessionComposer({ chat, teamName }: { chat: SessionChatController; teamName?: string }) {
+export function SessionComposer({ chat, teamName, agents }: { chat: SessionChatController; teamName?: string; agents: { id: string; name: string; enabled: boolean }[] }) {
   const { t } = useI18n();
   const [filesOpen, setFilesOpen] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -32,6 +32,10 @@ export function SessionComposer({ chat, teamName }: { chat: SessionChatControlle
   return <div className="chat-compose-area" onKeyDown={event => { if (event.key === "Escape" && filesOpen) { event.stopPropagation(); closeFiles(); } }}>
     <ExecutionStatus events={chat.executionEvents} sending={chat.sending} />
     <SessionProjectBar key={chat.sessionId} chat={chat} />
+    <div className="chat-execution-mode" role="group" aria-label={t("Execution mode")}>
+      <label><span>{t("Run with")}</span><select value={chat.executionMode} disabled={chat.busy} onChange={event => chat.setExecutionMode(event.target.value as "team" | "agent")}><option value="team">{t("Full team")}</option><option value="agent">{t("Single agent")}</option></select></label>
+      {chat.executionMode === "agent" ? <label><span>{t("Agent")}</span><select value={chat.agentId} disabled={chat.busy} onChange={event => chat.setAgentId(event.target.value)}><option value="">{t("Choose agent")}</option>{agents.filter(agent => agent.enabled).map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}</select></label> : <span className="chat-mode-hint">{t("All ordered team members will run")}</span>}
+    </div>
     <div ref={fileContext} id="session-file-context"><FileContextPanel chat={chat} open={filesOpen} close={closeFiles} /></div>
     <form className="chat-composer" onSubmit={event => { event.preventDefault(); void chat.send(); }}>
       <label htmlFor="session-prompt">{t("Your prompt")}</label>

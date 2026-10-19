@@ -44,6 +44,21 @@ public interface IPlatformStore
     Task ReleaseSessionLeaseAsync(Guid sessionId, Guid owner, CancellationToken cancellationToken);
     Task SaveSessionMessageAsync(SessionMessage message, CancellationToken cancellationToken);
     Task<IReadOnlyList<SessionMessage>> ListSessionMessagesAsync(Guid sessionId, int limit, CancellationToken cancellationToken);
+    Task SaveInteractiveQuestionAsync(InteractiveQuestion question, CancellationToken cancellationToken);
+    Task<InteractiveQuestion?> FindInteractiveQuestionAsync(Guid id, CancellationToken cancellationToken);
+    Task<IReadOnlyList<InteractiveQuestion>> ListInteractiveQuestionsAsync(Guid sessionId, CancellationToken cancellationToken);
+    Task SaveContextSnapshotAsync(SessionContextSnapshot snapshot, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SessionContextSnapshot>> ListContextSnapshotsAsync(Guid sessionId, int limit, CancellationToken cancellationToken);
+    Task SaveSessionContextSnapshotAsync(SessionContextSnapshot snapshot, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SessionContextSnapshot>> ListSessionContextSnapshotsAsync(Guid sessionId, int limit, CancellationToken cancellationToken);
+    Task<SessionGraph> GetSessionGraphAsync(Guid sessionId, int depth, CancellationToken cancellationToken);
+    Task SaveContextItemAsync(SessionContextItem item, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SessionContextItem>> ListContextItemsAsync(Guid sessionId, int limit, CancellationToken cancellationToken);
+    Task SaveTokenUsageAsync(SessionTokenUsage usage, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SessionTokenUsage>> ListTokenUsageAsync(Guid sessionId, int limit, CancellationToken cancellationToken);
+    Task SaveSessionCheckpointAsync(SessionCheckpoint checkpoint, CancellationToken cancellationToken);
+    Task<IReadOnlyList<SessionCheckpoint>> ListSessionCheckpointsAsync(Guid sessionId, int limit, CancellationToken cancellationToken);
+    Task SaveSessionLinkAsync(SessionLink link, CancellationToken cancellationToken);
     Task SaveApprovalAsync(ApprovalRequest approval, CancellationToken cancellationToken);
     Task<IReadOnlyList<ApprovalRequest>> ListApprovalsAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<WorkflowDefinition>> ListWorkflowsAsync(CancellationToken cancellationToken);
@@ -85,3 +100,4 @@ public interface IProviderCatalog
 {
     Task<IReadOnlyList<string>> DiscoverAsync(ProviderConnection connection, string secret, CancellationToken cancellationToken);
 }
+

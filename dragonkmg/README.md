@@ -79,6 +79,21 @@ Use **Run council workflow** to execute the stages in this order: Execution → 
 
 The dashboard retrieves and displays the enforced workflow checklist before a run. Every stage is instructed to mark unknowns, blockers, and unchecked items explicitly; it must not claim a check passed without evidence.
 
+## Workflow editor and interactive questions
+
+The **Workflows** page loads the persisted workflow graph from the API. Stages are shown as visual nodes with their assigned agent, order, approval requirement, and connections. Enable edit mode to drag stages into a new order and save through the validated `PUT /api/workflows/{id}` endpoint. The server rejects cycles, invalid stage ownership, disabled agents, duplicate positions, and malformed edges before changing durable state.
+
+When an agent needs a decision from a person, it uses an interactive question rather than inventing an answer. Questions are persisted with their session, workflow/agent context, allowed options, expiry, and answer state. The dashboard renders pending options and submits only a value from the stored option list:
+
+```text
+GET  /api/sessions/{sessionId}/questions
+POST /api/sessions/{sessionId}/questions/{questionId}/answer
+```
+
+An answer is accepted only once, before expiry, and only from the owning session. It grants no tool permissions and cannot bypass approvals. The next integration step is resuming the waiting `WorkflowRun` automatically after a validated answer; until then, the answer is durably recorded and visible for orchestration.
+
+Context snapshots, checkpoints, token usage, session graphs, and zero-provider-cost retention are described in [Context retention — Arabic](docs/CONTEXT_RETENTION.ar.md). The visual workflow governance and fail-closed rules are in [Workflow visual governance — Arabic](docs/WORKFLOW_VISUAL_GOVERNANCE.ar.md), and the question lifecycle is in [Interactive questions — Arabic](docs/INTERACTIVE_QUESTIONS.ar.md).
+
 ## Tool permissions
 
 Tool permissions are independent from skills. Add comma-separated tool IDs under **Agent skills and permissions** for a selected agent. A tool-backed skill is blocked before execution if any ID declared in its `RequiredToolIdsJson` is not explicitly granted. Grants for side-effecting tools retain an approval requirement; this local foundation does not execute host commands or untrusted MCP tools.
